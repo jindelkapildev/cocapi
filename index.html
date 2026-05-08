@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash of Clans Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { min-height: 100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); color: #ffffff; font-family: 'Rajdhani', sans-serif; padding: 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 3rem; }
+        .header h1 { font-size: 4rem; font-family: 'Orbitron', sans-serif; font-weight: 900; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ff9500 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; letter-spacing: 2px; }
+        .header p { font-size: 1.2rem; color: #a0a0c0; font-weight: 600; letter-spacing: 1px; }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap; }
+        .tab { padding: 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; color: #ffffff; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .tab.active { background: linear-gradient(135deg, #ffd700, #ff9500); color: #0f0f23; box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        .tab:hover:not(.active) { background: rgba(255, 255, 255, 0.15); }
+        .content { display: none; }
+        .content.active { display: block; }
+        .settings-box { max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 215, 0, 0.2); }
+        .form-group { margin-bottom: 2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 600; color: #ffd700; }
+        .form-group input { width: 100%; padding: 1rem; background: rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 215, 0, 0.3); border-radius: 8px; color: #ffffff; font-size: 1rem; outline: none; font-family: 'Rajdhani', sans-serif; }
+        .form-group input:focus { border-color: rgba(255, 215, 0, 0.6); }
+        .input-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+        .tag-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255, 215, 0, 0.2); border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.5); }
+        .tag-item span { font-weight: 600; }
+        .tag-item button { background: none; border: none; color: #ff4444; cursor: pointer; padding: 0.25rem; display: flex; align-items: center; font-size: 1.2rem; }
+        .btn { padding: 1rem 2rem; background: linear-gradient(135deg, #ffd700, #ff9500); border: none; border-radius: 8px; color: #0f0f23; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s; font-family: 'Rajdhani', sans-serif; }
+        .btn:hover { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); transform: translateY(-2px); }
+        .btn-icon { padding: 1rem; background: linear-gradient(135deg, #ffd700, #ff9500); border: none; border-radius: 8px; color: #0f0f23; cursor: pointer; font-weight: 700; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; }
+        .btn-full { width: 100%; padding: 1.25rem; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: rgba(255, 215, 0, 0.1); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.3); text-align: center; }
+        .stat-card .value { font-size: 2.5rem; font-weight: 700; color: #ffd700; }
+        .stat-card .label { color: #a0a0c0; font-size: 1.1rem; }
+        .card { background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255, 215, 0, 0.3); margin-bottom: 1.5rem; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+        .card-title { font-size: 1.5rem; font-weight: 700; color: #ffd700; }
+        .card-subtitle { color: #a0a0c0; font-size: 0.9rem; }
+        .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
+        .player-card { background: rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255, 215, 0, 0.3); transition: all 0.3s; }
+        .player-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3); }
+        .badge { padding: 0.5rem 1rem; background: rgba(255, 215, 0, 0.2); border-radius: 8px; font-weight: 700; font-size: 1.1rem; }
+        .error { margin-top: 1rem; padding: 1rem; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; border-radius: 8px; color: #ff8888; }
+        .loading { text-align: center; padding: 3rem; font-size: 1.2rem; color: #ffd700; }
+        .empty { text-align: center; padding: 4rem 2rem; background: rgba(255, 255, 255, 0.05); border-radius: 16px; border: 2px dashed rgba(255, 215, 0, 0.3); }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .helper-text { font-size: 0.9rem; color: #a0a0c0; margin-top: 0.5rem; }
+        .helper-text a { color: #ffd700; text-decoration: none; }
+        .helper-text a:hover { text-decoration: underline; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinning { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CLASH TRACKER</h1>
+            <p>Track all your accounts and clans in one place</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">Overview</button>
+            <button class="tab" onclick="switchTab('accounts')">Accounts</button>
+            <button class="tab" onclick="switchTab('clans')">Clans</button>
+            <button class="tab" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <div id="overview" class="content active">
+            <div id="overviewContent"></div>
+        </div>
+
+        <div id="accounts" class="content">
+            <h2 style="font-size: 2rem; margin-bottom: 1.5rem; color: #ffd700; font-weight: 700;">All Accounts</h2>
+            <div id="accountsContent"></div>
+        </div>
+
+        <div id="clans" class="content">
+            <h2 style="font-size: 2rem; margin-bottom: 1.5rem; color: #ffd700; font-weight: 700;">All Clans</h2>
+            <div id="clansContent"></div>
+        </div>
+
+        <div id="settings" class="content">
+            <div class="settings-box">
+                <h2 style="font-size: 2rem; margin-bottom: 1.5rem; color: #ffd700; font-weight: 700;">⚙️ Configuration</h2>
+
+                <div class="form-group">
+                    <label>Clash of Clans API Key (Token)</label>
+                    <input type="password" id="apiKey" placeholder="Enter your API key from developer.clashofclans.com">
+                    <p class="helper-text">Get your API key from <a href="https://developer.clashofclans.com/" target="_blank">developer.clashofclans.com</a></p>
+                </div>
+
+                <div class="form-group">
+                    <label>Player Tags</label>
+                    <div class="input-group">
+                        <input type="text" id="playerTagInput" placeholder="#ABC123DEF" onkeypress="if(event.key==='Enter') addPlayerTag()">
+                        <button class="btn-icon" onclick="addPlayerTag()">+</button>
+                    </div>
+                    <div id="playerTags" class="tag-list"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Clan Tags</label>
+                    <div class="input-group">
+                        <input type="text" id="clanTagInput" placeholder="#XYZ789ABC" onkeypress="if(event.key==='Enter') addClanTag()">
+                        <button class="btn-icon" onclick="addClanTag()">+</button>
+                    </div>
+                    <div id="clanTags" class="tag-list"></div>
+                </div>
+
+                <button class="btn btn-full" onclick="fetchData()" id="fetchBtn">
+                    <span id="fetchIcon">🔄</span>
+                    <span id="fetchText">Fetch All Data</span>
+                </button>
+
+                <div id="error"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Storage keys
+        const STORAGE_KEYS = {
+            API_KEY: 'coc_api_key',
+            PLAYER_TAGS: 'coc_player_tags',
+            CLAN_TAGS: 'coc_clan_tags',
+            PLAYERS_DATA: 'coc_players_data',
+            CLANS_DATA: 'coc_clans_data'
+        };
+
+        // Data
+        let apiKey = '';
+        let playerTags = [];
+        let clanTags = [];
+        let playersData = [];
+        let clansData = [];
+
+        // Initialize
+        window.onload = function() {
+            loadFromStorage();
+            renderPlayerTags();
+            renderClanTags();
+            renderOverview();
+            renderAccounts();
+            renderClans();
+        };
+
+        function loadFromStorage() {
+            apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+            playerTags = JSON.parse(localStorage.getItem(STORAGE_KEYS.PLAYER_TAGS) || '[]');
+            clanTags = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLAN_TAGS) || '[]');
+            playersData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PLAYERS_DATA) || '[]');
+            clansData = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLANS_DATA) || '[]');
+            
+            document.getElementById('apiKey').value = apiKey;
+        }
+
+        function saveToStorage() {
+            apiKey = document.getElementById('apiKey').value;
+            localStorage.setItem(STORAGE_KEYS.API_KEY, apiKey);
+            localStorage.setItem(STORAGE_KEYS.PLAYER_TAGS, JSON.stringify(playerTags));
+            localStorage.setItem(STORAGE_KEYS.CLAN_TAGS, JSON.stringify(clanTags));
+            localStorage.setItem(STORAGE_KEYS.PLAYERS_DATA, JSON.stringify(playersData));
+            localStorage.setItem(STORAGE_KEYS.CLANS_DATA, JSON.stringify(clansData));
+        }
+
+        function normalizeTag(tag) {
+            tag = tag.trim().toUpperCase();
+            if (!tag.startsWith('#')) tag = '#' + tag;
+            return tag;
+        }
+
+        function addPlayerTag() {
+            const input = document.getElementById('playerTagInput');
+            const tag = normalizeTag(input.value);
+            if (tag && tag !== '#' && !playerTags.includes(tag)) {
+                playerTags.push(tag);
+                saveToStorage();
+                renderPlayerTags();
+                input.value = '';
+            }
+        }
+
+        function removePlayerTag(tag) {
+            playerTags = playerTags.filter(t => t !== tag);
+            saveToStorage();
+            renderPlayerTags();
+        }
+
+        function addClanTag() {
+            const input = document.getElementById('clanTagInput');
+            const tag = normalizeTag(input.value);
+            if (tag && tag !== '#' && !clanTags.includes(tag)) {
+                clanTags.push(tag);
+                saveToStorage();
+                renderClanTags();
+                input.value = '';
+            }
+        }
+
+        function removeClanTag(tag) {
+            clanTags = clanTags.filter(t => t !== tag);
+            saveToStorage();
+            renderClanTags();
+        }
+
+        function renderPlayerTags() {
+            const container = document.getElementById('playerTags');
+            container.innerHTML = playerTags.map(tag => `
+                <div class="tag-item">
+                    <span>${tag}</span>
+                    <button onclick="removePlayerTag('${tag}')">×</button>
+                </div>
+            `).join('');
+        }
+
+        function renderClanTags() {
+            const container = document.getElementById('clanTags');
+            container.innerHTML = clanTags.map(tag => `
+                <div class="tag-item">
+                    <span>${tag}</span>
+                    <button onclick="removeClanTag('${tag}')">×</button>
+                </div>
+            `).join('');
+        }
+
+        // --- UPDATED FETCH DATA FUNCTION ---
+        async function fetchData() {
+            apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                showError('Please enter your API key first');
+                return;
+            }
+
+            const fetchBtn = document.getElementById('fetchBtn');
+            const fetchIcon = document.getElementById('fetchIcon');
+            const fetchText = document.getElementById('fetchText');
+            
+            fetchBtn.disabled = true;
+            fetchIcon.classList.add('spinning');
+            fetchText.textContent = 'Fetching...';
+            showError('');
+
+            playersData = [];
+            clansData = [];
+
+            try {
+                // Fetch all players using Vercel API
+                for (const tag of playerTags) {
+                    try {
+                        const encodedTag = encodeURIComponent(tag);
+                        const response = await fetch(`/api/player?tag=${encodedTag}`, {
+                            headers: {
+                                'Authorization': `Bearer ${apiKey}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if(!data.reason && !data.error) playersData.push(data);
+                        } else {
+                            console.error(`Failed to fetch player ${tag}:`, response.status);
+                        }
+                    } catch (err) {
+                        console.error(`Error fetching player ${tag}:`, err);
+                    }
+                }
+
+                // Fetch all clans using Vercel API
+                for (const tag of clanTags) {
+                    try {
+                        const encodedTag = encodeURIComponent(tag);
+                        const response = await fetch(`/api/clan?tag=${encodedTag}`, {
+                            headers: {
+                                'Authorization': `Bearer ${apiKey}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if(!data.reason && !data.error) clansData.push(data);
+                        } else {
+                            console.error(`Failed to fetch clan ${tag}:`, response.status);
+                        }
+                    } catch (err) {
+                        console.error(`Error fetching clan ${tag}:`, err);
+                    }
+                }
+
+                if (playersData.length === 0 && clansData.length === 0) {
+                    showError('No data fetched. Check your API key and tags.');
+                } else {
+                    showError(`✅ Successfully fetched ${playersData.length} accounts and ${clansData.length} clans!`);
+                    saveToStorage();
+                    renderOverview();
+                    renderAccounts();
+                    renderClans();
+                }
+            } catch (err) {
+                showError('Error fetching data: ' + err.message);
+            } finally {
+                fetchBtn.disabled = false;
+                fetchIcon.classList.remove('spinning');
+                fetchText.textContent = 'Fetch All Data';
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.innerHTML = message ? `<div class="error">${message}</div>` : '';
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        function renderOverview() {
+            const container = document.getElementById('overviewContent');
+            
+            if (playersData.length === 0 && clansData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">🔍</div>
+                        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">No Data Yet</h3>
+                        <p style="color: #a0a0c0; margin-bottom: 1.5rem;">Go to Settings to add your API key and account tags, then fetch your data</p>
+                        <button class="btn" onclick="switchTab('settings'); event.stopPropagation();">Go to Settings</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const totalTrophies = playersData.reduce((sum, p) => sum + p.trophies, 0);
+
+            let html = `
+                <h2 style="font-size: 2rem; margin-bottom: 1.5rem; color: #ffd700; font-weight: 700;">Quick Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="value">${playersData.length}</div><div class="label">Accounts</div></div>
+                    <div class="stat-card"><div class="value">${clansData.length}</div><div class="label">Clans</div></div>
+                    <div class="stat-card"><div class="value">${totalTrophies.toLocaleString()}</div><div class="label">Total Trophies</div></div>
+                </div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: #ffd700; font-weight: 700;">Accounts by Clan</h3>
+            `;
+
+            clansData.forEach(clan => {
+                const accountsInClan = playersData.filter(p => p.clan && p.clan.tag === clan.tag);
+                html += `
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🛡️ ${clan.name}</div>
+                                <div class="card-subtitle">${clan.tag} • Level ${clan.clanLevel}</div>
+                            </div>
+                            <div class="badge">${accountsInClan.length} ${accountsInClan.length === 1 ? 'account' : 'accounts'}</div>
+                        </div>
+                `;
+                if (accountsInClan.length > 0) {
+                    accountsInClan.forEach(player => {
+                        html += `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(0, 0, 0, 0.2); border-radius: 8px; margin-bottom: 0.75rem;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 1.1rem;">${player.name}</div>
+                                    <div style="color: #a0a0c0; font-size: 0.9rem;">TH${player.townHallLevel} • ${player.tag}</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span>🏆</span><span style="font-weight: 700;">${player.trophies.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                html += `</div>`;
+            });
+
+            const accountsWithoutClan = playersData.filter(p => !p.clan);
+            if (accountsWithoutClan.length > 0) {
+                html += `<h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: #ffd700; font-weight: 700;">Accounts Without Clan</h3>`;
+                accountsWithoutClan.forEach(player => {
+                    html += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: rgba(255, 68, 68, 0.1); border-radius: 8px; border: 1px solid rgba(255, 68, 68, 0.3); margin-bottom: 0.75rem;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.1rem;">${player.name}</div>
+                                <div style="color: #a0a0c0; font-size: 0.9rem;">TH${player.townHallLevel} • ${player.tag}</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>🏆</span><span style="font-weight: 700;">${player.trophies.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        function renderAccounts() {
+            const container = document.getElementById('accountsContent');
+            if (playersData.length === 0) {
+                container.innerHTML = `<div class="empty"><p style="color: #a0a0c0;">No accounts data available. Fetch data from Settings.</p></div>`;
+                return;
+            }
+
+            let html = '<div class="player-grid">';
+            playersData.forEach(player => {
+                const clan = player.clan;
+                html += `
+                    <div class="player-card">
+                        <div style="margin-bottom: 1rem;">
+                            <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffd700;">${player.name}</h3>
+                            <p style="color: #a0a0c0; font-size: 0.9rem;">${player.tag}</p>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 0.75rem; border-radius: 8px;">
+                                <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">🏠 Town Hall</div>
+                                <div style="font-size: 1.5rem; font-weight: 700;">${player.townHallLevel}</div>
+                            </div>
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 0.75rem; border-radius: 8px;">
+                                <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">🏆 Trophies</div>
+                                <div style="font-size: 1.5rem; font-weight: 700;">${player.trophies.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(0, 0, 0, 0.3); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">👑 Experience</div>
+                            <div style="font-size: 1.2rem; font-weight: 700;">Level ${player.expLevel}</div>
+                        </div>
+                        ${clan ? `
+                            <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 149, 0, 0.15)); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.4);">
+                                <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">🛡️ Clan</div>
+                                <div style="font-size: 1.2rem; font-weight: 700;">${clan.name}</div>
+                                <div style="font-size: 0.9rem; color: #a0a0c0; margin-top: 0.25rem;">${player.role}</div>
+                            </div>
+                        ` : `<div style="background: rgba(255, 68, 68, 0.15); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 68, 68, 0.3); text-align: center; color: #ff8888;">No Clan</div>`}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderClans() {
+            const container = document.getElementById('clansContent');
+            if (clansData.length === 0) {
+                container.innerHTML = `<div class="empty"><p style="color: #a0a0c0;">No clans data available. Fetch data from Settings.</p></div>`;
+                return;
+            }
+
+            let html = '';
+            clansData.forEach(clan => {
+                const myAccounts = playersData.filter(p => p.clan && p.clan.tag === clan.tag);
+                html += `
+                    <div class="card">
+                        <div style="display: flex; align-items: start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <h3 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffd700;">${clan.name}</h3>
+                                <p style="color: #a0a0c0; font-size: 1rem;">${clan.tag} • Level ${clan.clanLevel}</p>
+                                ${clan.description ? `<p style="color: #c0c0d0; margin-top: 0.75rem; font-size: 0.95rem; max-width: 600px;">${clan.description}</p>` : ''}
+                            </div>
+                            <div style="padding: 1rem 1.5rem; background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 149, 0, 0.2)); border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.4); text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 700; color: #ffd700;">${myAccounts.length}</div>
+                                <div style="color: #a0a0c0; font-size: 0.9rem;">Your ${myAccounts.length === 1 ? 'Account' : 'Accounts'}</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px;">
+                                <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">👥 Members</div>
+                                <div style="font-size: 1.5rem; font-weight: 700;">${clan.members} / 50</div>
+                            </div>
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px;">
+                                <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">🏆 Clan Points</div>
+                                <div style="font-size: 1.5rem; font-weight: 700;">${clan.clanPoints.toLocaleString()}</div>
+                            </div>
+                            <div style="background: rgba(0, 0, 0, 0.3); padding: 1rem; border-radius: 8px;">
+                                <div style="color: #a0a0c0; font-size: 0.9rem; margin-bottom: 0.5rem;">🛡️ War League</div>
+                                <div style="font-size: 1.2rem; font-weight: 700;">${clan.warLeague ? clan.warLeague.name : 'Unranked'}</div>
+                            </div>
+                        </div>
+                        ${myAccounts.length > 0 ? `
+                            <h4 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: #ffd700;">Your Accounts in This Clan</h4>
+                            ${myAccounts.map(player => `
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; border: 1px solid rgba(255, 215, 0, 0.2); margin-bottom: 0.75rem;">
+                                    <div>
+                                        <div style="font-size: 1.2rem; font-weight: 700;">${player.name}</div>
+                                        <div style="color: #a0a0c0; font-size: 0.9rem; margin-top: 0.25rem;">${player.role} • TH${player.townHallLevel} • ${player.tag}</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255, 215, 0, 0.2); border-radius: 8px;">
+                                        <span>🏆</span><span style="font-weight: 700; font-size: 1.1rem;">${player.trophies.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        ` : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
