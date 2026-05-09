@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Tracker Ultra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #090a15;
+            --bg-glass: rgba(20, 22, 45, 0.6);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --primary: #ffd700;
+            --secondary: #ff9500;
+            --text-main: #ffffff;
+            --text-muted: #8b92b2;
+            --success: #00e5ff;
+            --danger: #ff3366;
+            --card-hover: translateY(-5px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-main);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(255, 51, 102, 0.03) 0%, transparent 50%);
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; position: relative; }
+
+        /* --- HEADER & LIVE STATUS --- */
+        .header { text-align: center; margin-bottom: 3rem; position: relative; }
+        .header h1 {
+            font-size: 4.5rem;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.2));
+        }
+        .header p { font-size: 1.2rem; color: var(--text-muted); font-weight: 500; letter-spacing: 1px; margin-top: 0.5rem; }
+
+        .live-badge {
+            position: absolute; top: 0; right: 0;
+            background: rgba(0, 0, 0, 0.5); border: 1px solid var(--border-glass);
+            padding: 8px 16px; border-radius: 30px; backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.9rem;
+            color: var(--text-muted); transition: all 0.3s ease;
+        }
+        .live-badge.active { color: var(--success); border-color: rgba(0, 229, 255, 0.3); box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); }
+        .dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; }
+        .live-badge.active .dot { background: var(--success); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); } }
+
+        /* --- FLOATING NAVIGATION --- */
+        .nav-wrapper { position: sticky; top: 20px; z-index: 100; display: flex; justify-content: center; margin-bottom: 3rem; }
+        .tabs {
+            display: inline-flex; gap: 5px; background: rgba(10, 12, 25, 0.8);
+            padding: 8px; border-radius: 50px; backdrop-filter: blur(20px); border: 1px solid var(--border-glass);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .tab {
+            padding: 10px 24px; border: none; background: transparent; color: var(--text-muted);
+            border-radius: 40px; font-weight: 700; font-size: 1.1rem; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-family: 'Rajdhani', sans-serif;
+        }
+        .tab:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        /* --- CONTENT & GLASS CARDS --- */
+        .content { display: none; animation: fadeIn 0.4s ease-out forwards; opacity: 0; }
+        .content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .glass-panel {
+            background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass); border-radius: 24px; padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- SETTINGS TAB --- */
+        .settings-grid { display: grid; gap: 2rem; max-width: 800px; margin: 0 auto; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 700; color: var(--text-main); font-size: 1.2rem; letter-spacing: 1px;}
+        .input-group { display: flex; gap: 10px; }
+        input {
+            flex: 1; padding: 16px 20px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; color: white; font-size: 1.1rem; outline: none; transition: all 0.3s; font-family: 'Rajdhani', sans-serif;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); background: rgba(0,0,0,0.6); }
+        
+        .btn {
+            padding: 16px 32px; border: none; border-radius: 12px; font-weight: 800; font-size: 1.2rem;
+            cursor: pointer; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #000;
+            transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3); }
+        .btn:active { transform: translateY(1px); }
+        .btn-icon { width: 54px; padding: 0; display: grid; place-items: center; font-size: 1.8rem; }
+
+        .tag-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .tag-item {
+            padding: 6px 14px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600;
+        }
+        .tag-item button { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; font-weight: bold; transition: color 0.2s; }
+        .tag-item button:hover { color: #ff0044; }
+
+        /* TOGGLE SWITCH */
+        .toggle-box {
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(90deg, rgba(0, 229, 255, 0.05), transparent);
+            border-left: 4px solid var(--success); padding: 1.5rem; border-radius: 12px;
+        }
+        .switch { position: relative; display: inline-block; width: 60px; height: 32px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);}
+        input:checked + .slider:before { transform: translateX(28px); }
+
+        /* --- STATS & GRIDS --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+        .stat-card { text-align: center; padding: 2rem; }
+        .stat-card h2 { font-size: 3.5rem; font-family: 'Orbitron', sans-serif; color: var(--primary); margin-bottom: 0.5rem; line-height: 1; }
+        .stat-card p { color: var(--text-muted); font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+        
+        /* PLAYER CARD */
+        .card { transition: all 0.3s ease; cursor: default; position: relative; overflow: hidden; }
+        .card:hover { transform: var(--card-hover); border-color: rgba(255, 215, 0, 0.3); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary)); opacity: 0; transition: opacity 0.3s;
+        }
+        .card:hover::before { opacity: 1; }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+        .card-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.1; }
+        .card-tag { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; font-family: monospace; }
+        .th-badge { background: rgba(255, 215, 0, 0.1); color: var(--primary); padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 1.1rem; border: 1px solid rgba(255,215,0,0.2); }
+
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .stat-row:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
+        .stat-label { color: var(--text-muted); display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .stat-value { font-weight: 700; font-size: 1.2rem; }
+
+        .clan-badge {
+            margin-top: 1.5rem; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass);
+        }
+        .clan-badge.no-clan { color: var(--danger); justify-content: center; border-color: rgba(255, 51, 102, 0.2); background: rgba(255, 51, 102, 0.05); }
+
+        /* CLAN CARD EXTRAS */
+        .progress-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--success), #00b3ff); border-radius: 4px; transition: width 1s ease-out; }
+
+        /* --- SKELETON LOADERS --- */
+        .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%); background-size: 400% 100%; animation: shimmer 1.5s infinite linear; border-radius: 8px; }
+        .sk-title { height: 28px; width: 60%; margin-bottom: 8px; }
+        .sk-text { height: 16px; width: 40%; margin-bottom: 20px; }
+        .sk-row { height: 24px; width: 100%; margin-bottom: 15px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* --- TOAST NOTIFICATIONS --- */
+        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: rgba(20, 22, 45, 0.95); backdrop-filter: blur(10px); border-left: 4px solid var(--primary);
+            color: white; padding: 16px 24px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 12px;
+            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards, fadeOut 0.3s ease 3s forwards;
+        }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
+
+        /* UTILS */
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; filter: grayscale(1); }
+        .spin { animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="live-badge" id="liveBadge">
+            <span class="dot" id="liveDot"></span>
+            <span id="liveText">Live: OFF</span>
+        </div>
+        <h1>Clash Ultra</h1>
+        <p>Command Center & Data Uplink</p>
+    </div>
+
+    <div class="nav-wrapper">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(event,'overview')">Overview</button>
+            <button class="tab" onclick="switchTab(event,'accounts')">Accounts</button>
+            <button class="tab" onclick="switchTab(event,'clans')">Clans</button>
+            <button class="tab" onclick="switchTab(event,'settings')">Settings</button>
+        </div>
+    </div>
+
+    <div id="overview" class="content active">
+        <div id="overviewContent"></div>
+    </div>
+
+    <div id="accounts" class="content">
+        <div id="accountsContent"></div>
+    </div>
+
+    <div id="clans" class="content">
+        <div id="clansContent"></div>
+    </div>
+
+    <div id="settings" class="content">
+        <div class="glass-panel settings-grid">
+            
+            <div class="toggle-box">
+                <div>
+                    <h3 style="color: var(--success); font-size: 1.4rem; margin-bottom: 4px;">🟢 Live Sync</h3>
+                    <p style="color: var(--text-muted);">Auto-refresh data every 60 seconds seamlessly.</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="liveToggle" onchange="toggleLiveMode(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>Target Players</label>
+                <div class="input-group">
+                    <input id="playerTagInput" placeholder="e.g. #2PP" onkeypress="if(event.key==='Enter') addPlayerTag()">
+                    <button class="btn btn-icon" onclick="addPlayerTag()">+</button>
+                </div>
+                <div id="playerTags" class="tag-list"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Target Clans</label>
+                <div class="input-group">
+                    <input id="clanTagInput" placeholder="e.g. #CLAN" onkeypress="if(event.key==='Enter') addClanTag()">
+                    <button class="btn btn-icon" onclick="addClanTag()">+</button>
+                </div>
+                <div id="clanTags" class="tag-list"></div>
+            </div>
+
+            <button class="btn" id="manualFetchBtn" onclick="manualFetch()" style="width: 100%; margin-top: 1rem;">
+                <span id="btnIcon">⚡</span> Initialize Uplink
+            </button>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+</div>
+
+<script>
+// --- CORE CONFIG ---
+const API_URL = 'https://otbsecnrlgkpmomgwrtx.supabase.co/functions/v1/coc-api';
+
+let playerTags = JSON.parse(localStorage.getItem('playerTags') || '[]');
+let clanTags = JSON.parse(localStorage.getItem('clanTags') || '[]');
+let playersData = JSON.parse(localStorage.getItem('playersData') || '[]');
+let clansData = JSON.parse(localStorage.getItem('clansData') || '[]');
+
+let liveInterval = null;
+let isFetching = false;
+
+window.onload = () => {
+    renderPlayerTags();
+    renderClanTags();
+    renderOverview();
+    renderAccounts();
+    renderClans();
+    
+    if(localStorage.getItem('isLiveMode') === 'true') {
+        document.getElementById('liveToggle').checked = true;
+        toggleLiveMode(document.getElementById('liveToggle'));
+    }
+};
+
+// --- UTILS ---
+function saveStorage() {
+    localStorage.setItem('playerTags', JSON.stringify(playerTags));
+    localStorage.setItem('clanTags', JSON.stringify(clanTags));
+    localStorage.setItem('playersData', JSON.stringify(playersData));
+    localStorage.setItem('clansData', JSON.stringify(clansData));
+}
+
+function normalizeTag(tag) {
+    tag = tag.trim().toUpperCase();
+    return tag.startsWith('#') ? tag : (tag ? '#' + tag : '');
+}
+
+function showToast(msg, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type === 'success' ? '✓' : '⚠️';
+    toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+
+function extractData(data) {
+    return (data.player || data.clan || data.data || data.items || data);
+}
+
+// --- TAG MANAGEMENT ---
+function addTag(type) {
+    const input = document.getElementById(`${type}TagInput`);
+    const tag = normalizeTag(input.value);
+    const arr = type === 'player' ? playerTags : clanTags;
+    
+    if(tag && tag !== '#' && !arr.includes(tag)) {
+        arr.push(tag);
+        input.value = '';
+        saveStorage();
+        type === 'player' ? renderPlayerTags() : renderClanTags();
+        if(document.getElementById('liveToggle').checked) fetchData(true);
+    }
+}
+const addPlayerTag = () => addTag('player');
+const addClanTag = () => addTag('clan');
+
+function removeTag(type, tag) {
+    if(type === 'player') playerTags = playerTags.filter(t => t !== tag);
+    else clanTags = clanTags.filter(t => t !== tag);
+    saveStorage();
+    type === 'player' ? renderPlayerTags() : renderClanTags();
+}
+const removePlayerTag = (t) => removeTag('player', t);
+const removeClanTag = (t) => removeTag('clan', t);
+
+function renderTags(type) {
+    const arr = type === 'player' ? playerTags : clanTags;
+    document.getElementById(`${type}Tags`).innerHTML = arr.map(tag => `
+        <div class="tag-item">${tag} <button onclick="remove${type.charAt(0).toUpperCase() + type.slice(1)}Tag('${tag}')">×</button></div>
+    `).join('');
+}
+const renderPlayerTags = () => renderTags('player');
+const renderClanTags = () => renderTags('clan');
+
+function switchTab(event, id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// --- LIVE & FETCH LOGIC ---
+function toggleLiveMode(checkbox) {
+    const badge = document.getElementById('liveBadge');
+    const text = document.getElementById('liveText');
+    
+    if (checkbox.checked) {
+        localStorage.setItem('isLiveMode', 'true');
+        badge.classList.add('active');
+        text.innerHTML = 'Live: Syncing...';
+        showToast('Live tracking engaged');
+        fetchData(true); 
+        liveInterval = setInterval(() => fetchData(true), 60000); 
+    } else {
+        localStorage.setItem('isLiveMode', 'false');
+        badge.classList.remove('active');
+        text.innerHTML = 'Live: OFF';
+        clearInterval(liveInterval);
+        showToast('Live tracking disabled', 'error');
+    }
+}
+
+function manualFetch() {
+    const icon = document.getElementById('btnIcon');
+    icon.classList.add('spin');
+    
+    // Show skeletons if it's a manual fetch and not live syncing
+    if(!document.getElementById('liveToggle').checked) {
+        renderSkeletons();
+    }
+    
+    fetchData(false).then(() => icon.classList.remove('spin'));
+}
+
+async function fetchData(isBackgroundSync = false) {
+    if (isFetching || (playerTags.length === 0 && clanTags.length === 0)) return;
+    isFetching = true;
+
+    let tempPlayers = [], tempClans = [];
+
+    try {
+        const fetchPromises = [];
+        
+        playerTags.forEach(tag => {
+            fetchPromises.push(fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'search_player', tag }) })
+                .then(res => res.json()).then(data => { const p = extractData(data); if(p?.name) tempPlayers.push(p); }));
+        });
+
+        clanTags.forEach(tag => {
+            fetchPromises.push(fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'search_clan', tag }) })
+                .then(res => res.json()).then(data => { const c = extractData(data); if(c?.name) tempClans.push(c); }));
+        });
+
+        // Run all fetches in parallel for blazing fast speed
+        await Promise.all(fetchPromises);
+
+        playersData = tempPlayers;
+        clansData = tempClans;
+        saveStorage();
+        
+        renderOverview();
+        renderAccounts();
+        renderClans();
+
+        if(isBackgroundSync) {
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            document.getElementById('liveText').innerHTML = `Live: ${time}`;
+        } else {
+            showToast(`Uplink Complete: ${playersData.length} Players, ${clansData.length} Clans`);
+        }
+
+    } catch(err) {
+        console.error(err);
+        if(isBackgroundSync) document.getElementById('liveText').innerHTML = 'Live: Connection Lost';
+        else showToast('Uplink Failed. Check network.', 'error');
+    } finally {
+        isFetching = false;
+    }
+}
+
+// --- UI RENDERING ---
+function renderSkeletons() {
+    const skelCard = `
+        <div class="glass-panel card">
+            <div class="skeleton sk-title"></div>
+            <div class="skeleton sk-text"></div>
+            <div class="skeleton sk-row"></div>
+            <div class="skeleton sk-row"></div>
+            <div class="skeleton sk-row" style="height: 50px; margin-top: 20px;"></div>
+        </div>`;
+    
+    if(playerTags.length > 0) {
+        document.getElementById('accountsContent').innerHTML = `<div class="grid">${skelCard.repeat(playerTags.length)}</div>`;
+    }
+    if(clanTags.length > 0) {
+        document.getElementById('clansContent').innerHTML = `<div class="grid">${skelCard.repeat(clanTags.length)}</div>`;
+    }
+}
+
+function renderOverview() {
+    const container = document.getElementById('overviewContent');
+    if(playersData.length === 0 && clansData.length === 0) {
+        container.innerHTML = `<div class="glass-panel empty-state"><div class="empty-icon">📡</div><h2>No Uplink Data</h2><p>Add tags in Settings to establish connection.</p></div>`;
+        return;
+    }
+    const trophies = playersData.reduce((a,b) => a + (b.trophies||0), 0);
+    container.innerHTML = `
+        <div class="stats-grid">
+            <div class="glass-panel stat-card"><h2>${playersData.length}</h2><p>Active Agents</p></div>
+            <div class="glass-panel stat-card"><h2>${clansData.length}</h2><p>Monitored Clans</p></div>
+            <div class="glass-panel stat-card"><h2>${trophies.toLocaleString()}</h2><p>Total Trophies</p></div>
+        </div>
+    `;
+}
+
+function renderAccounts() {
+    const container = document.getElementById('accountsContent');
+    if(playersData.length === 0) return container.innerHTML = `<div class="glass-panel empty-state">No Player Data</div>`;
+    
+    container.innerHTML = `<div class="grid">
+        ${playersData.map(p => `
+            <div class="glass-panel card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">${p.name || 'Unknown'}</div>
+                        <div class="card-tag">${p.tag || ''}</div>
+                    </div>
+                    <div class="th-badge">TH ${p.townHallLevel || '?'}</div>
+                </div>
+                <div class="stat-row"><span class="stat-label">🏆 Trophies</span><span class="stat-value">${(p.trophies||0).toLocaleString()}</span></div>
+                <div class="stat-row"><span class="stat-label">⭐ Exp Level</span><span class="stat-value">${p.expLevel||0}</span></div>
+                <div class="stat-row"><span class="stat-label">⚔️ War Stars</span><span class="stat-value">${(p.warStars||0).toLocaleString()}</span></div>
+                
+                ${p.clan ? `
+                    <div class="clan-badge">
+                        <div style="font-weight: 700; font-size: 1.1rem;">${p.clan.name}</div>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">${p.role || 'Member'}</div>
+                    </div>
+                ` : `<div class="clan-badge no-clan">Lone Wolf (No Clan)</div>`}
+            </div>
+        `).join('')}
+    </div>`;
+}
+
+function renderClans() {
+    const container = document.getElementById('clansContent');
+    if(clansData.length === 0) return container.innerHTML = `<div class="glass-panel empty-state">No Clan Data</div>`;
+    
+    container.innerHTML = `<div class="grid">
+        ${clansData.map(c => {
+            const memberPct = ((c.members || 0) / 50) * 100;
+            return `
+            <div class="glass-panel card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title" style="color: var(--secondary);">${c.name || 'Unknown'}</div>
+                        <div class="card-tag">${c.tag || ''}</div>
+                    </div>
+                    <div class="th-badge" style="color: var(--text-main); border-color: rgba(255,255,255,0.2);">Lvl ${c.clanLevel || 0}</div>
+                </div>
+                
+                <div class="stat-row"><span class="stat-label">🏆 Total Points</span><span class="stat-value">${(c.clanPoints||0).toLocaleString()}</span></div>
+                <div class="stat-row"><span class="stat-label">🛡️ War League</span><span class="stat-value">${c.warLeague?.name || 'Unranked'}</span></div>
+                <div class="stat-row"><span class="stat-label">📍 Location</span><span class="stat-value">${c.location?.name || 'International'}</span></div>
+                
+                <div style="margin-top: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; color: var(--text-muted);">
+                        <span>Members</span>
+                        <span>${c.members||0} / 50</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: ${memberPct}%;"></div>
+                    </div>
+                </div>
+            </div>
+        `}).join('')}
+    </div>`;
+}
+</script>
+</body>
+</html>
