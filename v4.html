@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clash Tracker PRO</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+<style>
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+body{ background:#0f1123; font-family:'Rajdhani',sans-serif; color:white; padding:20px; min-height:100vh; }
+
+.container{ max-width:1400px; margin:auto; }
+
+.header{ text-align:center; margin-bottom:30px; position: relative; }
+
+.header h1{ font-size:4rem; font-family:'Orbitron',sans-serif; background:linear-gradient(90deg,#ffd700,#ff9500); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+/* Live Status Indicator */
+.live-status { position: absolute; top: 10px; right: 10px; font-size: 1rem; font-weight: 700; color: #a0a0c0; display: flex; align-items: center; gap: 8px; }
+.dot { height: 10px; width: 10px; background-color: #ff4444; border-radius: 50%; display: inline-block; }
+.dot.active { background-color: #00ff00; box-shadow: 0 0 10px #00ff00; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
+
+.tabs{ display:flex; justify-content:center; gap:10px; margin-bottom:30px; }
+
+.tab{ padding:12px 22px; border:none; border-radius:10px; background:#2a2d45; color:white; cursor:pointer; font-weight:700; transition: all 0.2s; }
+.tab.active{ background:linear-gradient(90deg,#ffd700,#ff9500); color:black; }
+
+.content{ display:none; }
+.content.active{ display:block; }
+
+.settings-box, .card, .player-card{ background:#1f2238; border:1px solid rgba(255,215,0,0.4); border-radius:18px; padding:20px; }
+
+.form-group{ margin-bottom:25px; }
+.form-group label{ display:block; margin-bottom:8px; font-weight:700; color:#ffd700; }
+
+.input-group{ display:flex; gap:10px; }
+input{ flex:1; padding:15px; background:#111426; border:none; border-radius:10px; color:white; font-size:16px; outline: none;}
+input:focus { border: 1px solid #ffd700; }
+
+.btn, .btn-icon{ border:none; cursor:pointer; background:linear-gradient(90deg,#ffd700,#ff9500); color:black; font-weight:700; border-radius:10px; transition: transform 0.1s; }
+.btn:active, .btn-icon:active { transform: scale(0.95); }
+.btn{ padding:16px; width:100%; font-size:20px; display: flex; align-items: center; justify-content: center; gap: 10px;}
+.btn-icon{ width:60px; font-size:25px; }
+
+/* Toggle Switch CSS */
+.switch-container { display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 0, 0.05); padding: 15px 20px; border-radius: 12px; border: 1px solid rgba(0, 255, 0, 0.2); margin-bottom: 25px; }
+.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; border: 1px solid #555; }
+.slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #00ff00; border-color: #00cc00;}
+input:checked + .slider:before { transform: translateX(26px); }
+
+.tag-list{ display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; }
+.tag-item{ padding:8px 14px; border-radius:10px; background:#333; border:1px solid #ffd700; display:flex; gap:10px; align-items:center; }
+.tag-item button{ background:none; border:none; color:#ff6666; cursor:pointer; font-size:18px; }
+
+.player-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; }
+.player-card h3{ color:#ffd700; margin-bottom:5px; font-size:28px; }
+
+.badge{ margin-top:15px; padding:12px; border-radius:10px; background:rgba(255,215,0,0.15); font-weight: 600;}
+
+.empty{ padding:60px; text-align:center; border:2px dashed rgba(255,215,0,0.3); border-radius:20px; }
+.error{ margin-top:20px; padding:15px; border-radius:10px; background:#4b1f2e; border:1px solid red; text-align: center; font-weight: bold;}
+.success{ margin-top:20px; padding:15px; border-radius:10px; background:rgba(0, 255, 0, 0.1); border:1px solid #00ff00; color: #00ff00; text-align: center; font-weight: bold;}
+
+.stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; margin-bottom:30px; }
+.stat{ background:#1f2238; padding:20px; border-radius:16px; text-align:center; border:1px solid rgba(255,215,0,0.3); }
+.stat h2{ font-size:42px; color:#ffd700; }
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+    <div class="live-status">
+        <span class="dot" id="liveDot"></span>
+        <span id="liveText">Live: OFF</span>
+    </div>
+    <h1>CLASH TRACKER</h1>
+    <p>Track all your accounts and clans instantly</p>
+</div>
+
+<div class="tabs">
+    <button class="tab active" onclick="switchTab(event,'overview')">Overview</button>
+    <button class="tab" onclick="switchTab(event,'accounts')">Accounts</button>
+    <button class="tab" onclick="switchTab(event,'clans')">Clans</button>
+    <button class="tab" onclick="switchTab(event,'settings')">Settings</button>
+</div>
+
+<div id="overview" class="content active">
+    <div id="overviewContent"></div>
+</div>
+
+<div id="accounts" class="content">
+    <div id="accountsContent"></div>
+</div>
+
+<div id="clans" class="content">
+    <div id="clansContent"></div>
+</div>
+
+<div id="settings" class="content">
+
+<div class="settings-box">
+
+    <div class="switch-container">
+        <div>
+            <h3 style="color: #00ff00; margin-bottom: 5px;">🟢 Live Tracking</h3>
+            <p style="font-size: 0.9rem; color: #a0a0c0;">Auto-sync data every 60 seconds</p>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="liveToggle" onchange="toggleLiveMode(this)">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="form-group">
+        <label>Player Tags</label>
+        <div class="input-group">
+            <input id="playerTagInput" placeholder="#2PP" onkeypress="if(event.key==='Enter') addPlayerTag()">
+            <button class="btn-icon" onclick="addPlayerTag()">+</button>
+        </div>
+        <div id="playerTags" class="tag-list"></div>
+    </div>
+
+    <div class="form-group">
+        <label>Clan Tags</label>
+        <div class="input-group">
+            <input id="clanTagInput" placeholder="#CLAN" onkeypress="if(event.key==='Enter') addClanTag()">
+            <button class="btn-icon" onclick="addClanTag()">+</button>
+        </div>
+        <div id="clanTags" class="tag-list"></div>
+    </div>
+
+    <button class="btn" id="manualFetchBtn" onclick="manualFetch()">
+        <span id="btnIcon">🔄</span> Fetch Data Now
+    </button>
+
+    <div id="messageBox"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+// USING YOUR FRIEND'S SUPABASE PROXY!
+const API_URL = 'https://otbsecnrlgkpmomgwrtx.supabase.co/functions/v1/coc-api';
+
+let playerTags = JSON.parse(localStorage.getItem('playerTags') || '[]');
+let clanTags = JSON.parse(localStorage.getItem('clanTags') || '[]');
+let playersData = JSON.parse(localStorage.getItem('playersData') || '[]');
+let clansData = JSON.parse(localStorage.getItem('clansData') || '[]');
+
+// Live Tracking Variables
+let liveInterval = null;
+let isFetching = false;
+
+window.onload = () => {
+    renderPlayerTags();
+    renderClanTags();
+    renderOverview();
+    renderAccounts();
+    renderClans();
+    
+    // Check if live mode was left on previously
+    const wasLive = localStorage.getItem('isLiveMode') === 'true';
+    if(wasLive) {
+        document.getElementById('liveToggle').checked = true;
+        toggleLiveMode(document.getElementById('liveToggle'));
+    }
+};
+
+function saveStorage(){
+    localStorage.setItem('playerTags',JSON.stringify(playerTags));
+    localStorage.setItem('clanTags',JSON.stringify(clanTags));
+    localStorage.setItem('playersData',JSON.stringify(playersData));
+    localStorage.setItem('clansData',JSON.stringify(clansData));
+}
+
+function normalizeTag(tag){
+    tag = tag.trim().toUpperCase();
+    if(!tag.startsWith('#')) tag = '#' + tag;
+    return tag;
+}
+
+function addPlayerTag(){
+    const input = document.getElementById('playerTagInput');
+    const tag = normalizeTag(input.value);
+    if(tag !== '#' && !playerTags.includes(tag)){
+        playerTags.push(tag);
+        input.value='';
+        saveStorage();
+        renderPlayerTags();
+        if(document.getElementById('liveToggle').checked) fetchData(true); 
+    }
+}
+
+function addClanTag(){
+    const input = document.getElementById('clanTagInput');
+    const tag = normalizeTag(input.value);
+    if(tag !== '#' && !clanTags.includes(tag)){
+        clanTags.push(tag);
+        input.value='';
+        saveStorage();
+        renderClanTags();
+        if(document.getElementById('liveToggle').checked) fetchData(true); 
+    }
+}
+
+function removePlayerTag(tag){
+    playerTags = playerTags.filter(t=>t!==tag);
+    saveStorage();
+    renderPlayerTags();
+}
+
+function removeClanTag(tag){
+    clanTags = clanTags.filter(t=>t!==tag);
+    saveStorage();
+    renderClanTags();
+}
+
+function renderPlayerTags(){
+    document.getElementById('playerTags').innerHTML = playerTags.map(tag=>`
+        <div class="tag-item">${tag} <button onclick="removePlayerTag('${tag}')">×</button></div>
+    `).join('');
+}
+
+function renderClanTags(){
+    document.getElementById('clanTags').innerHTML = clanTags.map(tag=>`
+        <div class="tag-item">${tag} <button onclick="removeClanTag('${tag}')">×</button></div>
+    `).join('');
+}
+
+function switchTab(event,id){
+    document.querySelectorAll('.tab').forEach(tab=> tab.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.content').forEach(c=> c.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function showMessage(msg, isError = false){
+    const box = document.getElementById('messageBox');
+    if(!msg) {
+        box.innerHTML = '';
+        return;
+    }
+    box.innerHTML = `<div class="${isError ? 'error' : 'success'}">${msg}</div>`;
+    // Auto clear success messages after 3 seconds
+    if(!isError) setTimeout(() => box.innerHTML = '', 3000); 
+}
+
+// Your friend's brilliant data extractor
+function extractData(data){
+    return (data.player || data.clan || data.data || data.items || data);
+}
+
+// --- LIVE TRACKING LOGIC ---
+function toggleLiveMode(checkbox) {
+    const dot = document.getElementById('liveDot');
+    const text = document.getElementById('liveText');
+    
+    if (checkbox.checked) {
+        localStorage.setItem('isLiveMode', 'true');
+        dot.classList.add('active');
+        text.innerHTML = 'Live: ON';
+        text.style.color = '#00ff00';
+        showMessage('Live tracking activated. Syncing every 60s.');
+        
+        fetchData(true); 
+        liveInterval = setInterval(() => { fetchData(true); }, 60000); 
+    } else {
+        localStorage.setItem('isLiveMode', 'false');
+        dot.classList.remove('active');
+        text.innerHTML = 'Live: OFF';
+        text.style.color = '#a0a0c0';
+        clearInterval(liveInterval);
+        showMessage('Live tracking paused.');
+    }
+}
+
+function manualFetch() {
+    const btnIcon = document.getElementById('btnIcon');
+    btnIcon.style.display = 'inline-block';
+    btnIcon.style.animation = 'spin 1s linear infinite';
+    fetchData(false).then(() => {
+        btnIcon.style.animation = 'none';
+    });
+}
+
+// Main Fetch Logic with Anti-Flash
+async function fetchData(isBackgroundSync = false){
+    if (isFetching) return; 
+    if (playerTags.length === 0 && clanTags.length === 0) return; 
+    
+    isFetching = true;
+    if(!isBackgroundSync) showMessage(''); 
+
+    let tempPlayersData = [];
+    let tempClansData = [];
+
+    try{
+        // Fetch Players via friend's proxy
+        for(const tag of playerTags){
+            const response = await fetch(API_URL,{
+                method:'POST',
+                headers:{ 'Content-Type':'application/json' },
+                body:JSON.stringify({ action:'search_player', tag:tag })
+            });
+            const json = await response.json();
+            const player = extractData(json);
+            if(player && player.name) tempPlayersData.push(player);
+        }
+
+        // Fetch Clans via friend's proxy
+        for(const tag of clanTags){
+            const response = await fetch(API_URL,{
+                method:'POST',
+                headers:{ 'Content-Type':'application/json' },
+                body:JSON.stringify({ action:'search_clan', tag:tag })
+            });
+            const json = await response.json();
+            const clan = extractData(json);
+            if(clan && clan.name) tempClansData.push(clan);
+        }
+
+        // Update real arrays
+        playersData = tempPlayersData;
+        clansData = tempClansData;
+        
+        saveStorage();
+        renderOverview();
+        renderAccounts();
+        renderClans();
+
+        if(isBackgroundSync) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            document.getElementById('liveText').innerHTML = `Live: Synced at ${timeString}`;
+        } else {
+            showMessage(`✅ Successfully loaded ${playersData.length} players and ${clansData.length} clans`);
+        }
+
+    }catch(err){
+        console.error(err);
+        if(isBackgroundSync) {
+            document.getElementById('liveText').innerHTML = 'Live: Connection Error';
+            document.getElementById('liveText').style.color = '#ff4444';
+        } else {
+            showMessage('Connection error. Check proxy or network.', true);
+        }
+    } finally {
+        isFetching = false;
+    }
+}
+
+// --- RENDERING LOGIC ---
+function renderOverview(){
+    const container = document.getElementById('overviewContent');
+    if(playersData.length===0 && clansData.length===0){
+        container.innerHTML = `<div class="empty"><h2>No Data Yet</h2><p>Add tags in Settings to begin.</p></div>`;
+        return;
+    }
+    const trophies = playersData.reduce((a,b)=>a+(b.trophies||0),0);
+    container.innerHTML = `
+        <div class="stats">
+            <div class="stat"><h2>${playersData.length}</h2><p>Accounts Tracked</p></div>
+            <div class="stat"><h2>${clansData.length}</h2><p>Clans Tracked</p></div>
+            <div class="stat"><h2>${trophies.toLocaleString()}</h2><p>Combined Trophies</p></div>
+        </div>
+    `;
+}
+
+function renderAccounts(){
+    const container = document.getElementById('accountsContent');
+    if(playersData.length===0){
+        container.innerHTML = `<div class="empty">No Player Data</div>`;
+        return;
+    }
+    container.innerHTML = `<div class="player-grid">
+        ${playersData.map(player=>`
+            <div class="player-card">
+                <h3>${player.name || 'Unknown'}</h3>
+                <p style="color:#aaa;">${player.tag || ''}</p>
+                <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div><span style="font-size:1.2rem;">🏠</span> TH ${player.townHallLevel || 'N/A'}</div>
+                    <div><span style="font-size:1.2rem;">🏆</span> ${player.trophies ? player.trophies.toLocaleString() : 0}</div>
+                </div>
+                <div class="badge">🛡️ ${player.clan?.name || 'No Clan'}</div>
+            </div>
+        `).join('')}
+    </div>`;
+}
+
+function renderClans(){
+    const container = document.getElementById('clansContent');
+    if(clansData.length===0){
+        container.innerHTML = `<div class="empty">No Clan Data</div>`;
+        return;
+    }
+    container.innerHTML = clansData.map(clan=>`
+        <div class="card" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: 15px;">
+            <div>
+                <h2 style="color:#ffd700; font-size: 2rem;">${clan.name || 'Unknown'}</h2>
+                <p style="color:#aaa;">${clan.tag || ''}</p>
+            </div>
+            <div style="display:flex; gap: 20px;">
+                <div style="text-align:center;"><div style="font-size:1.5rem; font-weight:bold;">${clan.members || 0}/50</div><div style="font-size:0.9rem; color:#aaa;">Members</div></div>
+                <div style="text-align:center;"><div style="font-size:1.5rem; font-weight:bold;">${clan.clanPoints ? clan.clanPoints.toLocaleString() : 0}</div><div style="font-size:0.9rem; color:#aaa;">Trophies</div></div>
+                <div style="text-align:center;"><div style="font-size:1.5rem; font-weight:bold;">${clan.clanLevel || 0}</div><div style="font-size:0.9rem; color:#aaa;">Level</div></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Add CSS keyframe for manual fetch button spin
+const style = document.createElement('style');
+style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
+document.head.appendChild(style);
+
+</script>
+
+</body>
+</html>
