@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blood Alliance | Dynamic Tracking</title>
+    <title>Hunters Alliance | Dynamic Tracking</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* --- DESIGN SYSTEM --- */
@@ -183,7 +183,7 @@
         <div class="nav-content">
             <div class="logo">
                 <div class="logo-icon">B<span>A</span></div>
-                BLOOD ALLIANCE
+                Hunters ALLIANCE
             </div>
             <div class="nav-links">
                 <a class="nav-btn active" onclick="switchTab('clans-view', this)">Alliance Clans</a>
@@ -236,7 +236,7 @@
                         <h1 id="dt-name">LOADING...</h1>
                         <div class="clan-tag" id="dt-tag" style="font-size: 1.1rem;"></div>
                         <div class="profile-tags">
-                            <span>❤️ Part of Blood Alliance</span>
+                            <span>❤️ Part of Hunters Alliance</span>
                             <span id="dt-type">🛡️ Type</span>
                             <span id="dt-location">📍 Location</span>
                         </div>
@@ -463,7 +463,7 @@
 
         // --- RENDER CLAN GRID ---
         function renderClanGrid() {
-            document.getElementById('clans-grid-desc').innerHTML = `Blood Alliance network has <strong>${clansData.length}</strong> active clans synchronized.`;
+            document.getElementById('clans-grid-desc').innerHTML = `Hunters Alliance network has <strong>${clansData.length}</strong> active clans synchronized.`;
             const container = document.getElementById('clan-grid-container');
             
             if(clansData.length === 0) {
