@@ -444,6 +444,43 @@
             }
         }
 
+        .sk-badge {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+        }
+
+        .sk-title {
+            height: 24px;
+            width: 60%;
+            margin-bottom: 8px;
+        }
+
+        .sk-tag {
+            height: 14px;
+            width: 40%;
+        }
+
+        .sk-block {
+            height: 70px;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+        }
+
+        .sk-line {
+            height: 16px;
+            width: 80%;
+            margin-bottom: 10px;
+        }
+
+        .sk-btn {
+            height: 45px;
+            width: 100%;
+            border-radius: 4px;
+            margin-top: auto;
+        }
+
         /* --- WAR SPECIFIC UI --- */
         .war-status-banner {
             font-family: 'JetBrains Mono', monospace;
@@ -815,7 +852,7 @@
             <div class="nav-right">
                 <div class="live-status" id="live-status">
                     <div class="live-dot" style="background: var(--warning-yellow); animation:none;"></div>
-                    Booting...
+                    Booting System...
                 </div>
                 <button class="btn-discord" id="refreshBtn" onclick="forceSync()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1192,7 +1229,10 @@
         let activityData = [];
 
         let cwlViewAllMode = false;
+
+        // Safety locks for rendering
         let isSyncing = false;
+        let isAppBooting = true;
 
         // --- DIAGNOSTICS ENGINE ---
         async function verifyDatabase() {
@@ -1214,16 +1254,24 @@
             renderSkeletons();
 
             const isDbConnected = await verifyDatabase();
-            if (!isDbConnected) return; // Halt execution if DB is completely broken
+            if (!isDbConnected) return;
 
             await loadTagsFromDB();
             const dataIsFresh = await loadDataFromDB();
 
-            handleRoute();
-
             if (!dataIsFresh || clansData.length === 0) {
-                apiSyncToDB();
+                await apiSyncToDB();
             }
+
+            isAppBooting = false;
+
+            // Force final render pass to clear skeletons if DB was totally empty
+            renderClanGrid();
+            renderPlayerGrid();
+            renderWarGrid();
+            renderCWLView();
+
+            handleRoute();
 
             setInterval(() => {
                 apiSyncToDB();
@@ -1316,7 +1364,6 @@
             return '<span class="role-member">Member</span>';
         }
 
-        // DOM SAFETIES
         function setEl(id, html) {
             const el = document.getElementById(id);
             if (el) el.innerHTML = html;
@@ -1483,9 +1530,9 @@
                         const clan = extractData(await cRes.json());
                         if (clan && clan.name) {
                             const oldClan = clansData.find(c => c.tag === tag);
-                            // Decouple tracking so it runs asynchronously without blocking the UI
+                            // Track activity asynchronously
                             if (oldClan && savedClanTags.includes(tag)) {
-                                trackClanActivity(oldClan, clan).catch(e => console.error("Tracking Error:", e));
+                                trackClanActivity(oldClan, clan).catch(e => console.error(e));
                             }
                             await _supabase.from('clans_db').upsert({ tag: tag, data: clan, updated_at: isoNow });
                         }
@@ -1534,13 +1581,13 @@
 
                 isSyncing = false;
                 await loadDataFromDB();
-                handleRoute(true); // Update the active tab's data without scrolling the user
+                handleRoute(true);
 
             } catch (err) {
                 isSyncing = false;
                 liveStatus.style.color = 'var(--danger-red)';
                 liveStatus.innerHTML = '<div class="live-dot" style="background: var(--danger-red); box-shadow: none; animation: none;"></div> Sync Blocked';
-                await loadDataFromDB(); // Attempt to clear skeletons and show whatever is in DB
+                await loadDataFromDB();
             }
         }
 
@@ -1608,7 +1655,6 @@
             await _supabase.from('cwl_clans').delete().eq('tag', tag);
             cwlClans = cwlClans.filter(c => c.tag !== tag);
 
-            // Also nullify any player assigned to this clan
             await _supabase.from('cwl_players').update({ assigned_clan_tag: null }).eq('assigned_clan_tag', tag);
             cwlPlayers.forEach(p => { if (p.assigned_clan_tag === tag) p.assigned_clan_tag = null; });
 
@@ -1679,8 +1725,8 @@
             const validClans = clansData.filter(c => savedClanTags.includes(c.tag));
 
             if (validClans.length === 0) {
-                if (savedClanTags.length > 0 && isSyncing) return; // Wait, keep skeletons
-                container.innerHTML = `<div class="empty-state">No standard clans tracked or invalid tags.</div>`;
+                if (savedClanTags.length > 0 && (isSyncing || isAppBooting)) return; // KEEPS SKELETONS ALIVE
+                container.innerHTML = `<div class="empty-state">No standard clans tracked.</div>`;
                 return;
             }
 
@@ -1734,7 +1780,7 @@
             const validPlayers = playersData.filter(p => savedPlayerTags.includes(p.tag));
 
             if (validPlayers.length === 0) {
-                if (savedPlayerTags.length > 0 && isSyncing) return;
+                if (savedPlayerTags.length > 0 && (isSyncing || isAppBooting)) return;
                 container.innerHTML = `<div class="empty-state">No standard players tracked.</div>`;
                 return;
             }
@@ -1782,7 +1828,7 @@
             const trackedWars = warsData.filter(w => savedClanTags.includes(w.tag) || savedClanTags.includes(w.allianceTag));
 
             if (trackedWars.length === 0) {
-                if (savedClanTags.length > 0 && isSyncing) return;
+                if (savedClanTags.length > 0 && (isSyncing || isAppBooting)) return;
                 container.innerHTML = `<div class="empty-state">No war data synced for standard clans.</div>`;
                 return;
             }
@@ -1916,7 +1962,7 @@
             const clansToDisplay = cwlViewAllMode ? cwlClans : cwlClans.filter(c => c.is_active);
 
             if (clansToDisplay.length === 0) {
-                if (cwlClans.length > 0 && isSyncing) return;
+                if (cwlClans.length > 0 && (isSyncing || isAppBooting)) return;
                 gridContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">No CWL Clans match this view.</div>`;
             } else {
                 let cardsHtml = '';
@@ -2029,7 +2075,6 @@
         function openClanDetail(tag, preventScroll = false) {
             const clan = clansData.find(c => c.tag === tag);
 
-            // If clan not found (e.g. invalid tag from hash), go to main view
             if (!clan) return switchTab('clans-view', 'nav-clan', preventScroll);
 
             setEl('dt-tag-sub', `📊 Clan Profile: ${clan.tag}`);
