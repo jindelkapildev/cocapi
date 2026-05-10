@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Alliance | Command Center</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* --- DESIGN SYSTEM --- */
+        :root {
+            --bg-base: #111111;
+            --bg-card: #1a1a1a;
+            --bg-card-hover: #222222;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent-red: #ff0022;
+            --accent-red-hover: #cc001b;
+            --border-color: #333333;
+            --success-green: #00ff66;
+            --danger-red: #ff3344;
+            --warning-yellow: #ffcc00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            padding-bottom: 5rem;
+        }
+
+        /* --- NAVBAR --- */
+        nav {
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(17, 17, 17, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-icon {
+            background: var(--text-main);
+            color: var(--bg-base);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 900;
+        }
+
+        .logo-icon span {
+            color: var(--accent-red);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--text-main);
+        }
+
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-red);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--success-green);
+            font-weight: 700;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .btn-discord {
+            background: var(--border-color);
+            color: white;
+            border: 1px solid #444;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-discord:hover {
+            background: var(--text-main);
+            color: var(--bg-base);
+        }
+
+        .btn-discord.syncing {
+            background: var(--warning-yellow);
+            color: black;
+            border-color: var(--warning-yellow);
+            cursor: not-allowed;
+        }
+
+        /* --- VIEWS & HEADERS --- */
+        .view {
+            display: none;
+            padding: 3rem 0;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            margin-bottom: 3rem;
+            border-left: 3px solid var(--accent-red);
+            padding-left: 1.5rem;
+        }
+
+        .section-subtitle {
+            color: var(--accent-red);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        /* --- CARDS & GRIDS --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .data-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .data-card:hover {
+            border-color: #555;
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .badge-img {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .card-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .card-tag {
+            color: var(--accent-red);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .th-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .stats-row {
+            display: flex;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            flex: 1;
+            text-align: center;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .stat-box:last-child {
+            border-right: none;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stat-value.green {
+            color: var(--success-green);
+        }
+
+        .hierarchy {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .hierarchy div {
+            margin-bottom: 8px;
+        }
+
+        .role-leader {
+            color: var(--accent-red);
+            font-weight: 700;
+        }
+
+        .role-co {
+            color: var(--warning-yellow);
+            font-weight: 600;
+        }
+
+        .role-elder {
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .role-member {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            margin-top: 1rem;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+
+        .status-badge.success {
+            background: rgba(0, 255, 102, 0.05);
+            color: var(--success-green);
+            border-color: rgba(0, 255, 102, 0.2);
+        }
+
+        .status-badge.danger {
+            background: rgba(255, 51, 68, 0.05);
+            color: var(--danger-red);
+            border-color: rgba(255, 51, 68, 0.2);
+        }
+
+        .status-badge.warning {
+            background: rgba(255, 204, 0, 0.05);
+            color: var(--warning-yellow);
+            border-color: rgba(255, 204, 0, 0.2);
+        }
+
+        .status-badge.neutral {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+
+        .btn-view {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            width: 100%;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .btn-view:hover {
+            background: var(--text-main);
+            color: var(--bg-base);
+        }
+
+        /* --- SKELETON LOADERS --- */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* --- WAR SPECIFIC UI --- */
+        .war-status-banner {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            padding: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+        }
+
+        .war-status-banner.inwar {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .war-status-banner.prep {
+            background: var(--warning-yellow);
+            color: black;
+        }
+
+        .war-status-banner.ended {
+            background: var(--border-color);
+            color: white;
+        }
+
+        .vs-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .vs-team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            text-align: center;
+        }
+
+        .vs-team img {
+            width: 64px !important;
+            height: 64px !important;
+            object-fit: contain !important;
+            margin-bottom: 8px;
+        }
+
+        .vs-team-name {
+            font-weight: 800;
+            font-size: 1.1rem;
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .vs-divider {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--accent-red);
+            padding: 0 1rem;
+            font-style: italic;
+        }
+
+        .war-score {
+            font-size: 2rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .war-score span {
+            color: var(--warning-yellow);
+            font-size: 1.5rem;
+        }
+
+        .war-dest {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .war-bar-container {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            margin-top: 6px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .war-bar-ally {
+            height: 100%;
+            background: var(--success-green);
+            transition: width 1s;
+        }
+
+        .war-bar-enemy {
+            height: 100%;
+            background: var(--danger-red);
+            transition: width 1s;
+        }
+
+        /* --- DETAILS VIEW & TABLES --- */
+        .back-btn {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            color: var(--text-main);
+        }
+
+        .profile-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .status-dot {
+            position: absolute;
+            top: 2rem;
+            right: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--success-green);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-dot::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success-green);
+        }
+
+        .profile-top {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-info h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .profile-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 10px;
+        }
+
+        .profile-tags span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .p-stat-card {
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 6px;
+        }
+
+        .p-stat-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-red);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .p-stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .p-stat-item label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .p-stat-item div {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .members-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 800px;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .player-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .player-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 4px;
+        }
+
+        /* --- SETTINGS TAB --- */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .input-group input,
+        .input-group select {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-base);
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: var(--accent-red);
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .tag-item {
+            background: var(--bg-base);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tag-item button {
+            background: none;
+            border: none;
+            color: var(--danger-red);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            border: 1px dashed var(--border-color);
+            color: var(--text-muted);
+            border-radius: 8px;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="nav-content">
+            <div class="logo">
+                <div class="logo-icon">B<span>A</span></div>
+                BLOOD ALLIANCE
+            </div>
+            <div class="nav-links">
+                <a class="nav-btn active" id="nav-clan" href="#/clans">Clans</a>
+                <a class="nav-btn" id="nav-war" href="#/wars">Live Wars</a>
+                <a class="nav-btn" id="nav-cwl" href="#/cwl">CWL Planner</a>
+                <a class="nav-btn" id="nav-player" href="#/players">Players</a>
+                <a class="nav-btn" id="nav-activity" href="#/activity">Activity Log</a>
+                <a class="nav-btn" id="nav-setting" href="#/settings">Settings</a>
+            </div>
+            <div class="nav-right">
+                <div class="live-status" id="live-status">
+                    <div class="live-dot" style="background: var(--warning-yellow); animation:none;"></div>
+                    Booting...
+                </div>
+                <button class="btn-discord" id="refreshBtn" onclick="forceSync()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    <span>Refresh DB</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <div id="clans-view" class="view active">
+            <div class="section-header">
+                <div class="section-subtitle">Clan Information</div>
+                <h1 class="section-title">Alliance Clans</h1>
+            </div>
+            <div class="card-grid" id="clan-grid-container"></div>
+        </div>
+
+        <div id="wars-view" class="view">
+            <div class="section-header">
+                <div class="section-subtitle">Live War Ops</div>
+                <h1 class="section-title">Active Battlegrounds</h1>
+            </div>
+            <div class="card-grid" id="war-grid-container"></div>
+        </div>
+
+        <div id="cwl-view" class="view">
+            <div class="section-header">
+                <div class="section-subtitle">Lazy CWL Ops</div>
+                <h1 class="section-title">CWL Deployment</h1>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.5rem;">CWL Clan Roster</h2>
+                <button id="cwlToggleBtn" onclick="toggleCWLViewMode()"
+                    style="background:var(--border-color); color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
+                    Showing: Active Only
+                </button>
+            </div>
+            <div class="card-grid" id="cwl-grid-container" style="margin-bottom: 4rem;"></div>
+
+            <div class="members-section">
+                <div style="margin-bottom: 1.5rem;">
+                    <h3>Player Deployment Opt-Ins</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Opt-In Status</th>
+                            <th>Assigned CWL Clan</th>
+                            <th>Current Location</th>
+                            <th>Deployment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dt-cwl-body">
+                        <tr>
+                            <td colspan="5" style="text-align:center; color:#888;">No players configured for CWL.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="players-view" class="view">
+            <div class="section-header">
+                <div class="section-subtitle">Operative Information</div>
+                <h1 class="section-title">Alliance Players</h1>
+            </div>
+            <div class="card-grid" id="player-grid-container"></div>
+        </div>
+
+        <div id="activity-view" class="view">
+            <div class="section-header">
+                <div class="section-subtitle">Movement Tracking</div>
+                <h1 class="section-title">Clan Activity Log</h1>
+            </div>
+            <div class="members-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Alliance Clan</th>
+                            <th>Current Clan</th>
+                            <th>Status</th>
+                            <th>Timeline</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dt-activity-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="detail-view" class="view">
+            <a class="back-btn" href="#/clans">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to Alliance Grid
+            </a>
+
+            <div class="profile-header">
+                <div class="section-subtitle" id="dt-tag-sub">📊 Clan Profile</div>
+                <div class="status-dot">Active</div>
+                <div style="display:flex; align-items:center; gap:2rem; margin-bottom:2rem;">
+                    <img id="dt-badge" src="" class="badge-img" style="width: 100px; height: 100px;">
+                    <div>
+                        <h1 id="dt-name"
+                            style="font-size:2.5rem; font-weight:800; margin-bottom:0.5rem; text-transform:uppercase;">
+                            LOADING...</h1>
+                        <div class="card-tag" id="dt-tag" style="font-size: 1.1rem;"></div>
+                        <div class="profile-tags">
+                            <span>❤️ Part of Blood Alliance</span>
+                            <span id="dt-type">🛡️ Type</span>
+                            <span id="dt-location">📍 Location</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                    <div style="border:1px solid var(--border-color); padding:1.5rem; border-radius:6px;">
+                        <div
+                            style="color:var(--accent-red); font-size:0.85rem; font-weight:600; text-transform:uppercase; margin-bottom:1.5rem;">
+                            Clan Stats</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Level</label>
+                                <div id="dt-level" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Trophies</label>
+                                <div id="dt-points" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Capital</label>
+                                <div id="dt-capital" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border:1px solid var(--border-color); padding:1.5rem; border-radius:6px;">
+                        <div
+                            style="color:var(--accent-red); font-size:0.85rem; font-weight:600; text-transform:uppercase; margin-bottom:1.5rem;">
+                            War Record</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Wins</label>
+                                <div id="dt-wins" class="green" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Losses</label>
+                                <div id="dt-losses"
+                                    style="color:var(--danger-red); font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Streak</label>
+                                <div id="dt-streak" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border:1px solid var(--border-color); padding:1.5rem; border-radius:6px;">
+                        <div
+                            style="color:var(--accent-red); font-size:0.85rem; font-weight:600; text-transform:uppercase; margin-bottom:1.5rem;">
+                            Leagues</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div style="grid-column: span 2;"><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">War
+                                    League</label>
+                                <div id="dt-warleague" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div style="grid-column: span 2;"><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Capital
+                                    League</label>
+                                <div id="dt-capleague" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border:1px solid var(--border-color); padding:1.5rem; border-radius:6px;">
+                        <div
+                            style="color:var(--accent-red); font-size:0.85rem; font-weight:600; text-transform:uppercase; margin-bottom:1.5rem;">
+                            Members</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Count</label>
+                                <div id="dt-memcount" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Capacity</label>
+                                <div id="dt-memcap" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                            <div style="grid-column: span 2;"><label
+                                    style="display:block; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Required
+                                    Trophies</label>
+                                <div id="dt-reqtrophies" style="font-size:1.25rem; font-weight:700;">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="members-section">
+                <div style="margin-bottom: 1rem;">
+                    <h3 id="dt-table-title" style="display:flex; align-items:center; gap:10px; font-size:1.2rem;">Clan
+                        Members</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>League</th>
+                            <th>Player</th>
+                            <th>Role</th>
+                            <th>Level</th>
+                            <th>Donations</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dt-members-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="war-detail-view" class="view">
+            <a class="back-btn" href="#/wars">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back to War Grid
+            </a>
+
+            <div class="data-card" style="margin-bottom: 2rem; text-align: center;">
+                <h2 id="wd-title" style="margin-bottom: 1rem;">WAR SCOREBOARD</h2>
+                <div
+                    style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; justify-content: center; gap: 4rem;">
+                    <div style="display:flex; flex-direction:column; align-items:center; flex:1; text-align:center;">
+                        <img id="wd-ally-badge" src=""
+                            style="width:64px; height:64px; object-fit:contain; margin-bottom:8px;">
+                        <div id="wd-ally-name" style="font-weight:800; font-size:1.5rem; max-width:300px;">Ally</div>
+                        <div id="wd-ally-stars"
+                            style="font-size:2rem; font-weight:800; display:flex; align-items:center; gap:4px;">0 <span
+                                style="color:var(--warning-yellow); font-size:1.5rem;">★</span></div>
+                        <div id="wd-ally-dest"
+                            style="font-size:0.9rem; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">
+                            0.00%</div>
+                    </div>
+                    <div
+                        style="font-size:1.5rem; font-weight:900; color:var(--accent-red); padding:0 1rem; font-style:italic;">
+                        VS</div>
+                    <div style="display:flex; flex-direction:column; align-items:center; flex:1; text-align:center;">
+                        <img id="wd-enemy-badge" src=""
+                            style="width:64px; height:64px; object-fit:contain; margin-bottom:8px;">
+                        <div id="wd-enemy-name" style="font-weight:800; font-size:1.5rem; max-width:300px;">Enemy</div>
+                        <div id="wd-enemy-stars"
+                            style="font-size:2rem; font-weight:800; display:flex; align-items:center; gap:4px;">0 <span
+                                style="color:var(--warning-yellow); font-size:1.5rem;">★</span></div>
+                        <div id="wd-enemy-dest"
+                            style="font-size:0.9rem; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">
+                            0.00%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="members-section">
+                <div style="margin-bottom: 1rem;">
+                    <h3>Alliance Attack Log</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Map pos</th>
+                            <th>Player</th>
+                            <th>TH</th>
+                            <th>Attacks Used</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wd-attack-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="settings-view" class="view">
+            <div class="section-header">
+                <div class="section-subtitle">>_ CONFIGURATION</div>
+                <h1 class="section-title">Network Sync & Routing</h1>
+            </div>
+
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px;">Tracked Standard
+                        Clans</h3>
+                    <div class="input-group">
+                        <input id="clanTagInput" placeholder="#TAG">
+                        <button
+                            style="background:var(--accent-red); border:none; padding:12px 20px; border-radius:4px; color:white; cursor:pointer; font-weight:bold;"
+                            onclick="addDBTag('clan')">Add</button>
+                    </div>
+                    <div class="tag-list" id="settings-clan-list">Loading...</div>
+                </div>
+
+                <div class="settings-card">
+                    <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px;">Tracked Standard
+                        Players</h3>
+                    <div class="input-group">
+                        <input id="playerTagInput" placeholder="#TAG">
+                        <button
+                            style="background:var(--accent-red); border:none; padding:12px 20px; border-radius:4px; color:white; cursor:pointer; font-weight:bold;"
+                            onclick="addDBTag('player')">Add</button>
+                    </div>
+                    <div class="tag-list" id="settings-player-list">Loading...</div>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 2rem; margin-top: 2rem;">
+                <h2 style="margin-bottom: 1.5rem;">CWL Logistics (Isolated Database)</h2>
+                <div class="settings-grid">
+                    <div class="settings-card">
+                        <h3 style="margin-bottom: 1.5rem;">Add CWL Clan</h3>
+                        <div class="input-group">
+                            <input id="cwlClanInput" placeholder="Clan #TAG">
+                            <button
+                                style="background:var(--accent-red); border:none; padding:12px 20px; border-radius:4px; color:white; cursor:pointer; font-weight:bold;"
+                                onclick="addCWLClan()">Add</button>
+                        </div>
+                        <div id="cwl-clan-list"></div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3 style="margin-bottom: 1.5rem;">Add CWL Player & Assign</h3>
+                        <div class="input-group">
+                            <input id="cwlPlayerInput" placeholder="Player #TAG">
+                            <select id="cwlPlayerOptIn">
+                                <option value="true">Wants to Play (Yes)</option>
+                                <option value="false">Opted Out (No)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <select id="cwlClanSelect">
+                                <option value="">Assign Target Clan (Optional)</option>
+                            </select>
+                            <button
+                                style="background:var(--success-green); color:black; border:none; padding:12px 20px; border-radius:4px; cursor:pointer; font-weight:bold;"
+                                onclick="addCWLPlayer()">Save Player</button>
+                        </div>
+                        <div class="tag-list" id="cwl-player-list" style="margin-top: 1rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🚨 IMPORTANT: ADD YOUR SUPABASE CREDENTIALS HERE
+        // ==========================================
+        const SUPABASE_URL = 'https://abagvwkpwipkllhrhabp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiYWd2d2twd2lwa2xsaHJoYWJwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODMyOTY2NywiZXhwIjoyMDkzOTA1NjY3fQ.VcjSXzxvg9GuG1slYcapvf7tMmrY1I1hOBdzymaHKak';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const API_URL = 'https://otbsecnrlgkpmomgwrtx.supabase.co/functions/v1/coc-api';
+        let savedClanTags = [];
+        let savedPlayerTags = [];
+        let cwlClans = [];
+        let cwlPlayers = [];
+
+        let clansData = [];
+        let playersData = [];
+        let warsData = [];
+        let activityData = [];
+
+        let cwlViewAllMode = false;
+        let isSyncing = false;
+
+        // --- DIAGNOSTICS ENGINE ---
+        async function verifyDatabase() {
+            try {
+                const { error } = await _supabase.from('alliance_tags').select('tag').limit(1);
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.error("Database Validation Failed:", e);
+                const liveStatus = document.getElementById('live-status');
+                liveStatus.innerHTML = '<div class="live-dot" style="background: var(--danger-red); animation:none;"></div> ⚠️ DB Connection Failed';
+                liveStatus.style.color = 'var(--danger-red)';
+                alert("CRITICAL DATABASE ERROR:\n\n" + e.message + "\n\nPlease check your Supabase URL, Anon Key, and ensure you ran the SQL script to create tables and RLS policies.");
+                return false;
+            }
+        }
+
+        window.onload = async () => {
+            renderSkeletons();
+
+            const isDbConnected = await verifyDatabase();
+            if (!isDbConnected) return; // Halt execution if DB is completely broken
+
+            await loadTagsFromDB();
+            const dataIsFresh = await loadDataFromDB();
+
+            handleRoute();
+
+            if (!dataIsFresh || clansData.length === 0) {
+                apiSyncToDB();
+            }
+
+            setInterval(() => {
+                apiSyncToDB();
+            }, 3600000);
+        };
+
+        // --- URL ROUTING ENGINE ---
+        function handleRoute(preventScroll = false) {
+            let hash = window.location.hash;
+            if (!hash || hash === '#' || hash === '#/') hash = '#/clans';
+
+            if (hash.startsWith('#/clan/')) {
+                const tag = '#' + hash.split('/')[2];
+                openClanDetail(tag, preventScroll);
+            } else if (hash.startsWith('#/war/')) {
+                const tag = '#' + hash.split('/')[2];
+                openWarDetail(tag, preventScroll);
+            } else if (hash === '#/wars') {
+                switchTab('wars-view', 'nav-war', preventScroll);
+            } else if (hash === '#/cwl') {
+                switchTab('cwl-view', 'nav-cwl', preventScroll);
+            } else if (hash === '#/players') {
+                switchTab('players-view', 'nav-player', preventScroll);
+            } else if (hash === '#/activity') {
+                switchTab('activity-view', 'nav-activity', preventScroll);
+            } else if (hash === '#/settings') {
+                switchTab('settings-view', 'nav-setting', preventScroll);
+            } else {
+                switchTab('clans-view', 'nav-clan', preventScroll);
+            }
+        }
+
+        window.addEventListener('hashchange', () => handleRoute(false));
+
+        // --- UTILS ---
+        function switchTab(viewId, navId, preventScroll = false) {
+            if (!preventScroll) window.scrollTo(0, 0);
+
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+
+            if (navId) {
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                const navBtn = document.getElementById(navId);
+                if (navBtn) navBtn.classList.add('active');
+            }
+        }
+
+        function formatTag(tag) {
+            tag = tag.trim().toUpperCase();
+            return tag.startsWith('#') ? tag : (tag ? '#' + tag : '');
+        }
+
+        function extractData(data) {
+            if (!data) return null;
+            return data.player || data.clan || data.war || data.currentWar || data.data || data.items || data;
+        }
+
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
+        function renderSkeletons() {
+            const block = `
+                <div class="data-card">
+                    <div class="card-top">
+                        <div class="skeleton sk-badge"></div>
+                        <div style="flex:1">
+                            <div class="skeleton sk-title"></div>
+                            <div class="skeleton sk-tag"></div>
+                        </div>
+                    </div>
+                    <div class="stats-row" style="border-top:none; padding-top:0;">
+                        <div class="skeleton sk-block" style="height: 60px;"></div>
+                    </div>
+                    <div class="skeleton sk-line" style="width: 40%;"></div>
+                    <div class="skeleton sk-line"></div>
+                    <div class="skeleton sk-line"></div>
+                    <div class="skeleton sk-btn"></div>
+                </div>`;
+            const html = block + block + block;
+            document.getElementById('clan-grid-container').innerHTML = html;
+            document.getElementById('war-grid-container').innerHTML = html;
+            document.getElementById('player-grid-container').innerHTML = html;
+            document.getElementById('cwl-grid-container').innerHTML = html;
+        }
+
+        function formatRole(role) {
+            if (role === 'leader') return '<span class="role-leader">Leader</span>';
+            if (role === 'coLeader') return '<span class="role-co">Co-Leader</span>';
+            if (role === 'admin') return '<span class="role-elder">Elder</span>';
+            return '<span class="role-member">Member</span>';
+        }
+
+        // DOM SAFETIES
+        function setEl(id, html) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+        function setImg(id, src) {
+            const el = document.getElementById(id);
+            if (el) el.src = src;
+        }
+        function safeNum(num) {
+            return (num || 0).toLocaleString();
+        }
+
+        // --- DB LOGIC ---
+        async function loadTagsFromDB() {
+            const { data: tags } = await _supabase.from('alliance_tags').select('*');
+            if (tags) {
+                savedClanTags = tags.filter(d => d.type === 'clan').map(d => d.tag);
+                savedPlayerTags = tags.filter(d => d.type === 'player').map(d => d.tag);
+            }
+
+            const [{ data: cwlC }, { data: cwlP }] = await Promise.all([
+                _supabase.from('cwl_clans').select('*'),
+                _supabase.from('cwl_players').select('*')
+            ]);
+
+            cwlClans = cwlC || [];
+            cwlPlayers = cwlP || [];
+
+            renderSettingsTags('clan');
+            renderSettingsTags('player');
+            renderCWLSettings();
+        }
+
+        async function loadDataFromDB() {
+            const liveStatus = document.getElementById('live-status');
+            let isFresh = true;
+            let oldestTime = new Date();
+
+            const [{ data: cData }, { data: pData }, { data: wData }, { data: aData }] = await Promise.all([
+                _supabase.from('clans_db').select('*'),
+                _supabase.from('players_db').select('*'),
+                _supabase.from('wars_db').select('*'),
+                _supabase.from('clan_activity').select('*').order('joined_at', { ascending: false }).limit(50)
+            ]);
+
+            clansData = cData ? cData.map(d => d.data) : [];
+            playersData = pData ? pData.map(d => d.data) : [];
+            warsData = wData ? wData.map(d => d.data) : [];
+            activityData = aData || [];
+
+            renderClanGrid();
+            renderPlayerGrid();
+            renderWarGrid();
+            renderActivityLog();
+            renderCWLView();
+
+            const allDBRows = [...(cData || []), ...(pData || []), ...(wData || [])];
+            if (allDBRows.length === 0) {
+                isFresh = false;
+            } else {
+                allDBRows.forEach(row => {
+                    const rowTime = new Date(row.updated_at);
+                    if (rowTime < oldestTime) oldestTime = rowTime;
+                });
+                const hoursOld = Math.abs(new Date() - oldestTime) / 36e5;
+                if (hoursOld > 1) isFresh = false;
+            }
+
+            if (isFresh && allDBRows.length > 0) {
+                liveStatus.style.color = 'var(--success-green)';
+                liveStatus.innerHTML = `<div class="live-dot"></div> DB Loaded (${oldestTime.getHours()}:${oldestTime.getMinutes().toString().padStart(2, '0')})`;
+            }
+            return isFresh;
+        }
+
+        // --- SYNC API TO DB ---
+        function forceSync() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('syncing');
+            btn.querySelector('span').innerText = "Syncing...";
+            apiSyncToDB().then(() => {
+                btn.classList.remove('syncing');
+                btn.querySelector('span').innerText = "Refresh DB";
+            });
+        }
+
+        async function trackClanActivity(oldClan, newClan) {
+            if (!oldClan || !oldClan.memberList || !newClan || !newClan.memberList) return;
+
+            const oldMembers = new Map(oldClan.memberList.map(m => [m.tag, m]));
+            const newMembers = new Map(newClan.memberList.map(m => [m.tag, m]));
+            const now = new Date().toISOString();
+
+            const joins = [];
+            const leaves = [];
+
+            for (const [tag, member] of newMembers.entries()) {
+                if (!oldMembers.has(tag)) joins.push(member);
+            }
+            for (const [tag, member] of oldMembers.entries()) {
+                if (!newMembers.has(tag)) leaves.push(member);
+            }
+
+            for (const member of joins) {
+                let th = null;
+                let cClan = newClan.name;
+                try {
+                    await delay(200);
+                    const pRes = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'search_player', tag: member.tag }) });
+                    const pData = extractData(await pRes.json());
+                    if (pData) {
+                        th = pData.townHallLevel || pData.townhallLevel;
+                        if (pData.clan) cClan = pData.clan.name;
+                    }
+                } catch (e) { }
+                await _supabase.from('clan_activity').insert([{
+                    player_tag: member.tag,
+                    player_name: member.name,
+                    clan_tag: newClan.tag,
+                    clan_name: newClan.name,
+                    is_active: true,
+                    joined_at: now,
+                    townhall_level: th,
+                    current_clan: cClan
+                }]);
+            }
+
+            for (const member of leaves) {
+                let th = null;
+                let cClan = 'None';
+                try {
+                    await delay(200);
+                    const pRes = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'search_player', tag: member.tag }) });
+                    const pData = extractData(await pRes.json());
+                    if (pData) {
+                        th = pData.townHallLevel || pData.townhallLevel;
+                        if (pData.clan) cClan = pData.clan.name;
+                    }
+                } catch (e) { }
+                await _supabase.from('clan_activity')
+                    .update({ left_at: now, is_active: false, townhall_level: th, current_clan: cClan })
+                    .eq('player_tag', member.tag)
+                    .eq('clan_tag', oldClan.tag)
+                    .eq('is_active', true);
+            }
+        }
+
+        async function apiSyncToDB() {
+            isSyncing = true;
+            const liveStatus = document.getElementById('live-status');
+            liveStatus.style.color = 'var(--warning-yellow)';
+            liveStatus.innerHTML = '<div class="live-dot" style="background: var(--warning-yellow); box-shadow: 0 0 10px var(--warning-yellow);"></div> Syncing API -> DB...';
+
+            const isoNow = new Date().toISOString();
+
+            const allClansToFetch = [...new Set([...savedClanTags, ...cwlClans.map(c => c.tag)])];
+            const allPlayersToFetch = [...new Set([...savedPlayerTags, ...cwlPlayers.map(p => p.player_tag)])];
+
+            try {
+                for (const tag of allClansToFetch) {
+                    try {
+                        await delay(300);
+                        const cRes = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'search_clan', tag }) });
+                        const clan = extractData(await cRes.json());
+                        if (clan && clan.name) {
+                            const oldClan = clansData.find(c => c.tag === tag);
+                            // Decouple tracking so it runs asynchronously without blocking the UI
+                            if (oldClan && savedClanTags.includes(tag)) {
+                                trackClanActivity(oldClan, clan).catch(e => console.error("Tracking Error:", e));
+                            }
+                            await _supabase.from('clans_db').upsert({ tag: tag, data: clan, updated_at: isoNow });
+                        }
+                    } catch (ce) { }
+
+                    if (savedClanTags.includes(tag) || cwlClans.find(c => c.tag === tag && c.is_active)) {
+                        try {
+                            await delay(300);
+                            let wRes = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'current_war', tag }) });
+                            let wJson = extractData(await wRes.json()) || {};
+
+                            if (!wJson.state && !wJson.reason) {
+                                wRes = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'Current_war', tag }) });
+                                wJson = extractData(await wRes.json()) || {};
+                            }
+
+                            let isValidWarData = false;
+                            let warPayload = null;
+
+                            if (wRes.status === 403 || wJson.reason === 'accessDenied') {
+                                warPayload = { tag: tag, privateLog: true };
+                                isValidWarData = true;
+                            } else if (wJson.state) {
+                                wJson.allianceTag = tag;
+                                warPayload = wJson;
+                                isValidWarData = true;
+                            }
+
+                            if (isValidWarData) {
+                                await _supabase.from('wars_db').upsert({ tag: tag, data: warPayload, updated_at: isoNow });
+                            }
+                        } catch (we) { }
+                    }
+                }
+
+                for (const tag of allPlayersToFetch) {
+                    try {
+                        await delay(300);
+                        const pRes = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'search_player', tag }) });
+                        const player = extractData(await pRes.json());
+                        if (player && player.name) {
+                            await _supabase.from('players_db').upsert({ tag: tag, data: player, updated_at: isoNow });
+                        }
+                    } catch (pe) { }
+                }
+
+                isSyncing = false;
+                await loadDataFromDB();
+                handleRoute(true); // Update the active tab's data without scrolling the user
+
+            } catch (err) {
+                isSyncing = false;
+                liveStatus.style.color = 'var(--danger-red)';
+                liveStatus.innerHTML = '<div class="live-dot" style="background: var(--danger-red); box-shadow: none; animation: none;"></div> Sync Blocked';
+                await loadDataFromDB(); // Attempt to clear skeletons and show whatever is in DB
+            }
+        }
+
+        // --- SETTINGS UI ---
+        async function addDBTag(type) {
+            const input = document.getElementById(`${type}TagInput`);
+            const tag = formatTag(input.value);
+            const arr = type === 'clan' ? savedClanTags : savedPlayerTags;
+
+            if (tag && tag !== '#' && !arr.includes(tag)) {
+                await _supabase.from('alliance_tags').insert([{ tag: tag, type: type }]);
+                arr.push(tag);
+                input.value = '';
+                renderSettingsTags(type);
+            }
+        }
+
+        async function removeDBTag(type, tag) {
+            await _supabase.from('alliance_tags').delete().match({ tag: tag, type: type });
+
+            if (type === 'clan') {
+                savedClanTags = savedClanTags.filter(t => t !== tag);
+                await _supabase.from('clans_db').delete().eq('tag', tag);
+            } else {
+                savedPlayerTags = savedPlayerTags.filter(t => t !== tag);
+                await _supabase.from('players_db').delete().eq('tag', tag);
+            }
+
+            renderSettingsTags(type);
+            loadDataFromDB();
+        }
+
+        function renderSettingsTags(type) {
+            const arr = type === 'clan' ? savedClanTags : savedPlayerTags;
+            const html = arr.map(tag => `
+                <div class="tag-item">
+                    ${tag} <button onclick="removeDBTag('${type}', '${tag}')">×</button>
+                </div>
+            `).join('');
+            document.getElementById(`settings-${type}-list`).innerHTML = html;
+        }
+
+        // CWL Settings
+        async function addCWLClan() {
+            const input = document.getElementById('cwlClanInput');
+            const tag = formatTag(input.value);
+
+            if (tag && tag !== '#' && !cwlClans.find(c => c.tag === tag)) {
+                await _supabase.from('cwl_clans').insert([{ tag: tag, is_active: true }]);
+                cwlClans.push({ tag: tag, is_active: true });
+                input.value = '';
+                renderCWLSettings();
+            }
+        }
+
+        async function toggleCWLClan(tag, currentStatus) {
+            await _supabase.from('cwl_clans').update({ is_active: !currentStatus }).eq('tag', tag);
+            const clan = cwlClans.find(c => c.tag === tag);
+            if (clan) clan.is_active = !currentStatus;
+            renderCWLSettings();
+            renderCWLView();
+        }
+
+        async function removeCWLClan(tag) {
+            await _supabase.from('cwl_clans').delete().eq('tag', tag);
+            cwlClans = cwlClans.filter(c => c.tag !== tag);
+
+            // Also nullify any player assigned to this clan
+            await _supabase.from('cwl_players').update({ assigned_clan_tag: null }).eq('assigned_clan_tag', tag);
+            cwlPlayers.forEach(p => { if (p.assigned_clan_tag === tag) p.assigned_clan_tag = null; });
+
+            renderCWLSettings();
+            renderCWLView();
+        }
+
+        async function addCWLPlayer() {
+            const pTag = formatTag(document.getElementById('cwlPlayerInput').value);
+            const optIn = document.getElementById('cwlPlayerOptIn').value === 'true';
+            let cTag = document.getElementById('cwlClanSelect').value;
+
+            if (!cTag || cTag === "") cTag = null;
+
+            if (pTag && !cwlPlayers.find(p => p.player_tag === pTag)) {
+                await _supabase.from('cwl_players').insert([{ player_tag: pTag, opt_in: optIn, assigned_clan_tag: cTag }]);
+                cwlPlayers.push({ player_tag: pTag, opt_in: optIn, assigned_clan_tag: cTag });
+
+                document.getElementById('cwlPlayerInput').value = '';
+                renderCWLSettings();
+            }
+        }
+
+        async function removeCWLPlayer(tag) {
+            await _supabase.from('cwl_players').delete().eq('player_tag', tag);
+            cwlPlayers = cwlPlayers.filter(p => p.player_tag !== tag);
+            renderCWLSettings();
+            renderCWLView();
+        }
+
+        function renderCWLSettings() {
+            const clanListHtml = cwlClans.map(c => {
+                const btn = c.is_active
+                    ? `<button style="background:var(--success-green);color:black;border:none;padding:4px 8px;border-radius:4px;font-size:0.8rem;" onclick="toggleCWLClan('${c.tag}', true)">Active</button>`
+                    : `<button style="background:var(--border-color);color:white;border:none;padding:4px 8px;border-radius:4px;font-size:0.8rem;" onclick="toggleCWLClan('${c.tag}', false)">Benched</button>`;
+
+                return `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-base); padding:10px; border:1px solid var(--border-color); border-radius:4px; margin-bottom:8px;">
+                    <div style="font-family:'JetBrains Mono', monospace;">${c.tag}</div>
+                    <div style="display:flex; gap:10px;">
+                        ${btn}
+                        <button style="background:none;border:none;color:var(--danger-red);cursor:pointer;" onclick="removeCWLClan('${c.tag}')">✖</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('cwl-clan-list').innerHTML = clanListHtml || '<div class="empty-state" style="padding:2rem;">No CWL clans registered.</div>';
+
+            const selectOptions = cwlClans.filter(c => c.is_active).map(c => `<option value="${c.tag}">${c.tag}</option>`).join('');
+            document.getElementById('cwlClanSelect').innerHTML = `<option value="">Assign Target Clan (Optional)</option>` + selectOptions;
+
+            const playerListHtml = cwlPlayers.map(p => {
+                const optText = p.opt_in ? `<span style="color:var(--success-green);">[Yes]</span>` : `<span style="color:var(--danger-red);">[No]</span>`;
+                const clanText = p.assigned_clan_tag ? `➡️ 🛡️ ${p.assigned_clan_tag}` : '';
+                return `
+                <div class="tag-item">
+                    👤 ${p.player_tag} ${optText} ${clanText} 
+                    <button onclick="removeCWLPlayer('${p.player_tag}')">×</button>
+                </div>`;
+            }).join('');
+
+            document.getElementById('cwl-player-list').innerHTML = playerListHtml || '<span style="color:var(--text-muted); font-size: 0.9rem;">No CWL players added.</span>';
+        }
+
+        // --- RENDER VIEWS ---
+        function renderClanGrid() {
+            const container = document.getElementById('clan-grid-container');
+            const validClans = clansData.filter(c => savedClanTags.includes(c.tag));
+
+            if (validClans.length === 0) {
+                if (savedClanTags.length > 0 && isSyncing) return; // Wait, keep skeletons
+                container.innerHTML = `<div class="empty-state">No standard clans tracked or invalid tags.</div>`;
+                return;
+            }
+
+            let html = '';
+            validClans.forEach(clan => {
+                const badgeUrl = clan.badgeUrls?.large || clan.badgeUrls?.medium || '';
+                const leader = clan.memberList?.find(m => m.role === 'leader')?.name || 'Unknown';
+                const coCount = clan.memberList?.filter(m => m.role === 'coLeader').length || 0;
+
+                html += `
+                <div class="data-card">
+                    <div class="card-top">
+                        ${badgeUrl ? `<img src="${badgeUrl}" class="badge-img">` : `<div class="badge-img" style="background:#333;border-radius:50%;"></div>`}
+                        <div>
+                            <div class="card-name">${clan.name}</div>
+                            <div class="card-tag">${clan.tag}</div>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">Level</div>
+                            <div class="stat-value">${clan.clanLevel || 0}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Members</div>
+                            <div class="stat-value">${clan.members || 0}/50</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">War Wins</div>
+                            <div class="stat-value green">${clan.warWins || 0}</div>
+                        </div>
+                    </div>
+                    <div class="hierarchy">
+                        <div style="margin-bottom: 12px; font-weight: bold; color: var(--text-muted); display:flex; align-items:center; gap:6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Clan Hierarchy
+                        </div>
+                        <div>LEADER: <span class="role-leader">${leader}</span></div>
+                        <div>CO-LEADERS: <span class="role-co">${coCount} Members</span></div>
+                    </div>
+                    <button class="btn-view" onclick="window.location.hash='#/clan/${clan.tag.replace('#', '')}'">
+                        View Clan 
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderPlayerGrid() {
+            const container = document.getElementById('player-grid-container');
+            const validPlayers = playersData.filter(p => savedPlayerTags.includes(p.tag));
+
+            if (validPlayers.length === 0) {
+                if (savedPlayerTags.length > 0 && isSyncing) return;
+                container.innerHTML = `<div class="empty-state">No standard players tracked.</div>`;
+                return;
+            }
+
+            let html = '';
+            validPlayers.forEach(player => {
+                const leagueIcon = player.league?.iconUrls?.medium || player.league?.iconUrls?.tiny || '';
+                let roleHtml = '<span class="role-member">Member</span>';
+                if (player.role === 'leader') roleHtml = '<span class="role-leader">Leader</span>';
+                if (player.role === 'coLeader') roleHtml = '<span class="role-co">Co-Leader</span>';
+                if (player.role === 'admin') roleHtml = '<span class="role-elder">Elder</span>';
+
+                const clanName = player.clan ? player.clan.name : 'No Clan';
+                const isInAlliance = player.clan && savedClanTags.includes(player.clan.tag);
+                const allianceBadge = isInAlliance
+                    ? `<div class="status-badge success">🛡️ In Alliance (${clanName})</div>`
+                    : `<div class="status-badge danger">⚠️ Not in Alliance (${clanName})</div>`;
+
+                html += `
+                <div class="data-card">
+                    <div class="th-badge">TH ${player.townHallLevel || '?'}</div>
+                    <div class="card-top" style="margin-bottom: 1rem;">
+                        ${leagueIcon ? `<img src="${leagueIcon}" class="badge-img" style="width:50px;height:50px;">` : `<div style="width:50px;font-size:2rem;text-align:center;">🛡️</div>`}
+                        <div>
+                            <div class="card-name" style="font-size: 1.3rem;">${player.name}</div>
+                            <div class="card-tag">${player.tag}</div>
+                        </div>
+                    </div>
+                    <div class="stats-row" style="padding: 1rem 0; margin-bottom: 1rem;">
+                        <div class="stat-box"><div class="stat-label">Trophies</div><div class="stat-value">${(player.trophies || 0).toLocaleString()}</div></div>
+                        <div class="stat-box"><div class="stat-label">Exp Lvl</div><div class="stat-value">${player.expLevel || 0}</div></div>
+                    </div>
+                    <div class="hierarchy" style="margin-bottom: 1rem;">
+                        <div>ROLE: ${roleHtml}</div>
+                        <div>DONATIONS: <span class="green">↑ ${player.donations || 0}</span> | <span style="color:var(--danger-red)">↓ ${player.donationsReceived || 0}</span></div>
+                    </div>
+                    ${allianceBadge}
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderWarGrid() {
+            const container = document.getElementById('war-grid-container');
+            const trackedWars = warsData.filter(w => savedClanTags.includes(w.tag) || savedClanTags.includes(w.allianceTag));
+
+            if (trackedWars.length === 0) {
+                if (savedClanTags.length > 0 && isSyncing) return;
+                container.innerHTML = `<div class="empty-state">No war data synced for standard clans.</div>`;
+                return;
+            }
+
+            let html = '';
+            trackedWars.forEach(war => {
+                const matchedClan = clansData.find(c => c.tag === war.tag || c.tag === war.allianceTag) || {};
+                const fallbackBadge = matchedClan.badgeUrls?.large || matchedClan.badgeUrls?.medium || '';
+                const fallbackName = matchedClan.name || war.tag || war.allianceTag;
+
+                if (war.privateLog) {
+                    html += `
+                    <div class="data-card" style="justify-content: center; align-items: center; text-align: center;">
+                        ${fallbackBadge ? `<img src="${fallbackBadge}" style="width:64px; height:64px; object-fit:contain; margin-bottom:1rem;">` : ''}
+                        <div class="card-name">${fallbackName}</div>
+                        <div class="status-badge neutral">⚠️ War Log is Private</div>
+                    </div>`;
+                    return;
+                }
+
+                if (war.proxyError || !war.state) {
+                    html += `
+                    <div class="data-card" style="justify-content: center; align-items: center; text-align: center;">
+                        ${fallbackBadge ? `<img src="${fallbackBadge}" style="width:64px; height:64px; object-fit:contain; margin-bottom:1rem;">` : ''}
+                        <div class="card-name">${fallbackName}</div>
+                        <div class="status-badge warning">⚠️ Proxy Error or Missing Data</div>
+                    </div>`;
+                    return;
+                }
+
+                if (war.state === 'notInWar') {
+                    html += `
+                    <div class="data-card" style="justify-content: center; align-items: center; text-align: center;">
+                        ${fallbackBadge ? `<img src="${fallbackBadge}" style="width:64px; height:64px; object-fit:contain; margin-bottom:1rem;">` : ''}
+                        <div class="card-name">${fallbackName}</div>
+                        <div class="status-badge neutral">Peace Time (Not in War)</div>
+                    </div>`;
+                    return;
+                }
+
+                const isAllyClan1 = war.clan?.tag === war.allianceTag;
+                const ally = isAllyClan1 ? (war.clan || {}) : (war.opponent || war.clan || {});
+                const enemy = isAllyClan1 ? (war.opponent || {}) : (war.clan || {});
+
+                let statusClass = war.state === 'inWar' ? 'inwar' : (war.state === 'preparation' ? 'prep' : 'ended');
+                let statusText = war.state === 'inWar' ? 'BATTLE DAY' : (war.state === 'preparation' ? 'PREPARATION DAY' : 'WAR ENDED');
+
+                const allyPct = ally.destructionPercentage || 0;
+                const enemyPct = enemy.destructionPercentage || 0;
+
+                html += `
+                <div class="data-card">
+                    <div class="war-status-banner ${statusClass}">${statusText}</div>
+                    <div class="vs-container">
+                        <div class="vs-team">
+                            <img src="${ally.badgeUrls?.small || fallbackBadge}" style="width:64px; height:64px; object-fit:contain;">
+                            <div class="vs-team-name">${ally.name || fallbackName}</div>
+                            <div class="war-score">${ally.stars || 0} <span>★</span></div>
+                            <div class="war-dest">${allyPct.toFixed(1)}%</div>
+                        </div>
+                        <div class="vs-divider">VS</div>
+                        <div class="vs-team">
+                            <img src="${enemy.badgeUrls?.small || ''}" style="width:64px; height:64px; object-fit:contain;">
+                            <div class="vs-team-name">${enemy.name || 'Enemy'}</div>
+                            <div class="war-score">${enemy.stars || 0} <span>★</span></div>
+                            <div class="war-dest">${enemyPct.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div class="war-bar-container">
+                        <div class="war-bar-ally" style="width: ${allyPct}%;"></div>
+                        <div class="war-bar-enemy" style="width: ${enemyPct}%;"></div>
+                    </div>
+                    <button class="btn-view" style="margin-top: 1.5rem;" onclick="window.location.hash='#/war/${war.allianceTag.replace('#', '')}'">View Attack Log</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderActivityLog() {
+            const tbody = document.getElementById('dt-activity-body');
+
+            if (activityData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">No recent activity in tracked clans.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            activityData.forEach(log => {
+                const statusHtml = log.is_active
+                    ? `<div class="status-badge success" style="margin:0; padding:6px 12px;">🟢 Joined</div>`
+                    : `<div class="status-badge danger" style="margin:0; padding:6px 12px;">🔴 Left</div>`;
+
+                const jDate = new Date(log.joined_at);
+                const jStr = jDate.toLocaleDateString() + ' ' + jDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const lStr = log.left_at ? (new Date(log.left_at).toLocaleDateString() + ' ' + new Date(log.left_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) : '-';
+
+                const thBadge = log.townhall_level ? `<span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.75rem; margin-left:8px;">TH ${log.townhall_level}</span>` : '';
+
+                html += `
+                <tr>
+                    <td>
+                        <div style="font-weight:bold;">${log.player_name} ${thBadge}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);">${log.player_tag}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:bold;">${log.clan_name}</div>
+                        <div style="font-size:0.8rem;color:var(--text-muted);">${log.clan_tag}</div>
+                    </td>
+                    <td>${log.current_clan || 'Unknown'}</td>
+                    <td>${statusHtml}</td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">
+                        <div><span style="color:var(--success-green);">In:</span> ${jStr}</div>
+                        ${log.left_at ? `<div style="margin-top:4px;"><span style="color:var(--danger-red);">Out:</span> ${lStr}</div>` : ''}
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function toggleCWLViewMode() {
+            cwlViewAllMode = !cwlViewAllMode;
+            const btn = document.getElementById('cwlToggleBtn');
+            btn.innerText = cwlViewAllMode ? "Showing: All Clans" : "Showing: Active Only";
+            renderCWLView();
+        }
+
+        function renderCWLView() {
+            const gridContainer = document.getElementById('cwl-grid-container');
+            const tbody = document.getElementById('dt-cwl-body');
+
+            const clansToDisplay = cwlViewAllMode ? cwlClans : cwlClans.filter(c => c.is_active);
+
+            if (clansToDisplay.length === 0) {
+                if (cwlClans.length > 0 && isSyncing) return;
+                gridContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">No CWL Clans match this view.</div>`;
+            } else {
+                let cardsHtml = '';
+                clansToDisplay.forEach(cc => {
+                    const clanDb = clansData.find(d => d.tag === cc.tag) || {};
+                    const clanName = clanDb.name || cc.tag;
+                    const badgeUrl = clanDb.badgeUrls?.large || clanDb.badgeUrls?.medium || '';
+
+                    const assignedHere = cwlPlayers.filter(p => p.opt_in && p.assigned_clan_tag === cc.tag);
+                    const totalAssigned = assignedHere.length;
+                    let arrivedCount = 0;
+
+                    assignedHere.forEach(a => {
+                        const playerDb = playersData.find(p => p.tag === a.player_tag);
+                        if (playerDb && playerDb.clan && playerDb.clan.tag === cc.tag) {
+                            arrivedCount++;
+                        }
+                    });
+
+                    const pct = totalAssigned === 0 ? 0 : Math.round((arrivedCount / totalAssigned) * 100);
+                    const barColor = pct === 100 ? 'var(--success-green)' : (pct > 50 ? 'var(--warning-yellow)' : 'var(--danger-red)');
+
+                    const activeBadge = cc.is_active
+                        ? `<div class="th-badge" style="color:var(--success-green); border-color:var(--success-green);">ACTIVE</div>`
+                        : `<div class="th-badge" style="color:var(--text-muted);">BENCHED</div>`;
+
+                    cardsHtml += `
+                    <div class="data-card">
+                        ${activeBadge}
+                        <div class="card-top">
+                            ${badgeUrl ? `<img src="${badgeUrl}" class="badge-img">` : `<div class="badge-img" style="background:#333;border-radius:50%;"></div>`}
+                            <div>
+                                <div class="card-name">${clanName}</div>
+                                <div class="card-tag">${cc.tag}</div>
+                            </div>
+                        </div>
+                        <div class="stats-row">
+                            <div class="stat-box"><div class="stat-label">Level</div><div class="stat-value">${clanDb.clanLevel || 0}</div></div>
+                            <div class="stat-box"><div class="stat-label">Members</div><div class="stat-value">${clanDb.members || 0}/50</div></div>
+                        </div>
+                        
+                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:600; margin-bottom:4px;">
+                            <span>Deployment Status</span>
+                            <span>${arrivedCount} / ${totalAssigned} (${pct}%)</span>
+                        </div>
+                        <div style="width: 100%; height: 12px; background: var(--bg-base); border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); margin-top: 10px; margin-bottom: 1.5rem;">
+                            <div style="height: 100%; width: ${pct}%; background: ${barColor}; transition: width 0.5s ease;"></div>
+                        </div>
+                        
+                        <button class="btn-view" onclick="window.location.hash='#/clan/${cc.tag.replace('#', '')}'">
+                            View Clan
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </button>
+                    </div>`;
+                });
+                gridContainer.innerHTML = cardsHtml;
+            }
+
+            if (cwlPlayers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">No players configured for CWL.</td></tr>`;
+                return;
+            }
+
+            let tableHtml = '';
+            cwlPlayers.forEach(a => {
+                const playerDb = playersData.find(p => p.tag === a.player_tag) || {};
+                const pName = playerDb.name || 'Unknown Player';
+                const pClanTag = playerDb.clan ? playerDb.clan.tag : null;
+                const pClanName = playerDb.clan ? playerDb.clan.name : 'No Clan';
+
+                const targetClanName = a.assigned_clan_tag
+                    ? ((clansData.find(c => c.tag === a.assigned_clan_tag) || {}).name || a.assigned_clan_tag)
+                    : 'None';
+
+                const optHtml = a.opt_in
+                    ? `<span style="color:var(--success-green); font-weight:bold;">YES</span>`
+                    : `<span style="color:var(--danger-red); font-weight:bold;">NO</span>`;
+
+                let statusHtml = '';
+                if (!a.opt_in) {
+                    statusHtml = `<span style="color:var(--text-muted);">Not Playing</span>`;
+                } else if (!a.assigned_clan_tag) {
+                    statusHtml = `<span style="color:var(--warning-yellow);">Awaiting Assignment</span>`;
+                } else if (pClanTag === a.assigned_clan_tag) {
+                    statusHtml = `<span style="color:var(--success-green); font-weight:bold;">🟢 Arrived</span>`;
+                } else if (!pClanTag) {
+                    statusHtml = `<span style="color:var(--danger-red); font-weight:bold;">🔴 Clanless</span>`;
+                } else {
+                    statusHtml = `<span style="color:var(--warning-yellow); font-weight:bold;">🟡 Wrong Clan</span>`;
+                }
+
+                const rowStyle = a.opt_in ? '' : 'opacity: 0.5;';
+
+                tableHtml += `
+                <tr style="${rowStyle}">
+                    <td>
+                        <div style="font-weight:bold;">${pName}</div>
+                        <div style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:var(--text-muted);">${a.player_tag}</div>
+                    </td>
+                    <td>${optHtml}</td>
+                    <td style="font-weight:600;">${targetClanName}</td>
+                    <td style="color:var(--text-muted);">${pClanName}</td>
+                    <td>${statusHtml}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = tableHtml;
+        }
+
+        // --- OPEN DETAILS ---
+        function openClanDetail(tag, preventScroll = false) {
+            const clan = clansData.find(c => c.tag === tag);
+
+            // If clan not found (e.g. invalid tag from hash), go to main view
+            if (!clan) return switchTab('clans-view', 'nav-clan', preventScroll);
+
+            setEl('dt-tag-sub', `📊 Clan Profile: ${clan.tag}`);
+            setEl('dt-name', clan.name);
+            setEl('dt-tag', clan.tag);
+            setImg('dt-badge', clan.badgeUrls?.large || clan.badgeUrls?.medium || '');
+
+            setEl('dt-level', safeNum(clan.clanLevel));
+            setEl('dt-points', safeNum(clan.clanPoints));
+            setEl('dt-capital', safeNum(clan.clanCapitalPoints));
+            setEl('dt-wins', safeNum(clan.warWins));
+            setEl('dt-losses', safeNum(clan.warLosses));
+            setEl('dt-streak', safeNum(clan.warWinStreak));
+
+            setEl('dt-memcount', `${clan.members || 0}/50`);
+            setEl('dt-memcap', `${Math.round(((clan.members || 0) / 50) * 100)}%`);
+            setEl('dt-reqtrophies', safeNum(clan.requiredTrophies));
+
+            const tbody = document.getElementById('dt-members-body');
+            if (clan.memberList && clan.memberList.length > 0) {
+                const sorted = [...clan.memberList].sort((a, b) => a.clanRank - b.clanRank);
+                let html = '';
+                sorted.forEach(m => {
+                    html += `
+                    <tr>
+                        <td>#${m.clanRank}</td>
+                        <td>${m.league?.iconUrls?.tiny ? `<img src="${m.league.iconUrls.tiny}" style="width:36px;">` : '-'}</td>
+                        <td class="player-cell">
+                            <span class="player-name">${m.name}</span>
+                            <span class="player-tag" style="font-family:'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); display:block; margin-top:4px;">${m.tag}</span>
+                        </td>
+                        <td>${formatRole(m.role)}</td>
+                        <td>${m.expLevel}</td>
+                        <td class="donations">
+                            <div style="color:var(--success-green); margin-bottom:4px; font-family:'JetBrains Mono', monospace;">↑ ${m.donations}</div>
+                            <div style="color:var(--text-muted); font-family:'JetBrains Mono', monospace;">↓ ${m.donationsReceived}</div>
+                        </td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">No members found</td></tr>`;
+            }
+            switchTab('detail-view', null, preventScroll);
+        }
+
+        function openWarDetail(tag, preventScroll = false) {
+            const war = warsData.find(w => w.allianceTag === tag);
+            if (!war || !war.clan) return switchTab('wars-view', 'nav-war', preventScroll);
+
+            const isAllyClan1 = war.clan.tag === tag;
+            const ally = isAllyClan1 ? (war.clan || {}) : (war.opponent || war.clan || {});
+            const enemy = isAllyClan1 ? (war.opponent || {}) : (war.clan || {});
+
+            setImg('wd-ally-badge', ally.badgeUrls?.medium || '');
+            setEl('wd-ally-name', ally.name || 'Ally');
+            setEl('wd-ally-stars', `${ally.stars || 0} <span>★</span>`);
+            setEl('wd-ally-dest', `${(ally.destructionPercentage || 0).toFixed(2)}%`);
+
+            setImg('wd-enemy-badge', enemy.badgeUrls?.medium || '');
+            setEl('wd-enemy-name', enemy.name || 'Enemy');
+            setEl('wd-enemy-stars', `${enemy.stars || 0} <span>★</span>`);
+            setEl('wd-enemy-dest', `${(enemy.destructionPercentage || 0).toFixed(2)}%`);
+
+            const tbody = document.getElementById('wd-attack-body');
+            if (ally.members) {
+                const sorted = [...ally.members].sort((a, b) => a.mapPosition - b.mapPosition);
+                let html = '';
+                sorted.forEach(m => {
+                    let attackStr = '<span style="color: var(--warning-yellow);">Pending</span>';
+                    let perfStr = '-';
+                    if (m.attacks && m.attacks.length > 0) {
+                        const atk = m.attacks[0];
+                        attackStr = `<span class="green">1 Used</span>`;
+                        perfStr = `<span class="green">${'★'.repeat(atk.stars)}${'☆'.repeat(3 - atk.stars)}</span> (${atk.destructionPercentage}%)`;
+                    } else if (war.state === 'warEnded') {
+                        attackStr = `<span style="color: var(--danger-red); font-weight: bold;">Missed</span>`;
+                    }
+                    html += `
+                    <tr>
+                        <td>#${m.mapPosition}</td>
+                        <td>
+                            <div style="font-weight:bold;">${m.name}</div>
+                            <div style="font-family:'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); display:block; margin-top:4px;">${m.tag}</div>
+                        </td>
+                        <td>TH ${m.townhallLevel}</td>
+                        <td>${attackStr}</td>
+                        <td style="font-size: 1.2rem;">${perfStr}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            }
+            switchTab('war-detail-view', null, preventScroll);
+        }
+    </script>
+</body>
+
+</html>
